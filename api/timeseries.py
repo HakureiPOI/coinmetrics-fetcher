@@ -29,7 +29,7 @@ class TimeseriesAPI(CoinMetricsAPI):
         end_time: Optional[str] = None,
         frequency: Optional[str] = None,
         sort: Optional[str] = None,
-        limit: Optional[int] = None,
+        limit_per_asset: Optional[int] = None,
         page_size: Optional[int] = None,
         verbose: bool = True,
     ) -> pd.DataFrame:
@@ -43,7 +43,7 @@ class TimeseriesAPI(CoinMetricsAPI):
             end_time: 结束时间 (ISO 8601)
             frequency: 频率 (1d, 1h 等)
             sort: 排序方式 (asset, time)
-            limit: 限制返回记录数
+            limit_per_asset: 每个资产限制返回记录数
             page_size: 每页大小
             verbose: 是否打印进度
 
@@ -62,8 +62,8 @@ class TimeseriesAPI(CoinMetricsAPI):
             params["frequency"] = frequency
         if sort:
             params["sort"] = sort
-        if limit:
-            params["limit"] = limit
+        if limit_per_asset:
+            params["limit_per_asset"] = limit_per_asset
 
         return self._request(
             endpoint="/timeseries/asset-metrics",
@@ -229,7 +229,7 @@ class TimeseriesAPI(CoinMetricsAPI):
         markets: str,
         start_time: Optional[str] = None,
         end_time: Optional[str] = None,
-        limit: Optional[int] = None,
+        limit_per_market: Optional[int] = None,
         page_size: Optional[int] = None,
         verbose: bool = True,
     ) -> pd.DataFrame:
@@ -241,8 +241,8 @@ class TimeseriesAPI(CoinMetricsAPI):
             params["start_time"] = start_time
         if end_time:
             params["end_time"] = end_time
-        if limit:
-            params["limit"] = limit
+        if limit_per_market:
+            params["limit_per_market"] = limit_per_market
 
         return self._request(
             endpoint="/timeseries/market-trades",
@@ -256,7 +256,7 @@ class TimeseriesAPI(CoinMetricsAPI):
         markets: str,
         start_time: Optional[str] = None,
         end_time: Optional[str] = None,
-        limit: Optional[int] = None,
+        limit_per_market: Optional[int] = None,
         page_size: Optional[int] = None,
         verbose: bool = True,
     ) -> pd.DataFrame:
@@ -268,8 +268,8 @@ class TimeseriesAPI(CoinMetricsAPI):
             params["start_time"] = start_time
         if end_time:
             params["end_time"] = end_time
-        if limit:
-            params["limit"] = limit
+        if limit_per_market:
+            params["limit_per_market"] = limit_per_market
 
         return self._request(
             endpoint="/timeseries/market-orderbooks",
@@ -283,7 +283,7 @@ class TimeseriesAPI(CoinMetricsAPI):
         markets: str,
         start_time: Optional[str] = None,
         end_time: Optional[str] = None,
-        limit: Optional[int] = None,
+        limit_per_market: Optional[int] = None,
         page_size: Optional[int] = None,
         verbose: bool = True,
     ) -> pd.DataFrame:
@@ -295,8 +295,8 @@ class TimeseriesAPI(CoinMetricsAPI):
             params["start_time"] = start_time
         if end_time:
             params["end_time"] = end_time
-        if limit:
-            params["limit"] = limit
+        if limit_per_market:
+            params["limit_per_market"] = limit_per_market
 
         return self._request(
             endpoint="/timeseries/market-quotes",
