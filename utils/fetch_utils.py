@@ -14,41 +14,66 @@ logger = logging.getLogger(__name__)
 _log_initialized = False
 
 
+class ColoredFormatter(logging.Formatter):
+    """彩色日志格式化器"""
+    
+    COLORS = {
+        'DEBUG': '\033[36m',     # 青色
+        'INFO': '\033[32m',      # 绿色
+        'WARNING': '\033[33m',   # 黄色
+        'ERROR': '\033[31m',     # 红色
+        'CRITICAL': '\033[35m',  # 紫色
+    }
+    RESET = '\033[0m'
+    
+    def format(self, record):
+        color = self.COLORS.get(record.levelname, '')
+        record.levelname = f"{color}{record.levelname:7}{self.RESET}"
+        return super().format(record)
+
+
 def setup_logging(
     level: int = logging.INFO,
     log_file: Optional[str] = None,
-    format_str: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 ) -> None:
     """
     配置日志系统。
 
     Args:
         level: 日志级别，默认 INFO
-        log_file: 日志文件路径，None 表示仅输出到控制台
-        format_str: 日志格式字符串
+        log_file: 日志文件路径，None 表示仅输出到控制台（默认）
     """
     global _log_initialized
 
     if _log_initialized:
-        logger.warning("日志系统已初始化，跳过配置")
         return
 
-    handlers: list[logging.Handler] = [logging.StreamHandler(sys.stdout)]
+    # 控制台处理器（彩色）
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(level)
+    console_format = "%(asctime)s %(levelname)s %(message)s"
+    console_handler.setFormatter(ColoredFormatter(console_format, datefmt="%H:%M:%S"))
 
+    handlers: list[logging.Handler] = [console_handler]
+
+    # 文件处理器（可选）
     if log_file:
         log_path = Path(log_file)
         log_path.parent.mkdir(parents=True, exist_ok=True)
-        handlers.append(logging.FileHandler(log_file, encoding="utf-8"))
+        file_handler = logging.FileHandler(log_file, encoding="utf-8")
+        file_handler.setLevel(level)
+        file_handler.setFormatter(logging.Formatter(
+            "%(asctime)s %(levelname)s %(name)s - %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S"
+        ))
+        handlers.append(file_handler)
 
-    logging.basicConfig(
-        level=level,
-        format=format_str,
-        handlers=handlers,
-        force=True,
-    )
+    # 配置根日志
+    root_logger = logging.getLogger()
+    root_logger.setLevel(level)
+    root_logger.handlers = handlers
 
     _log_initialized = True
-    logger.info(f"日志系统初始化完成，日志文件：{log_file or '控制台'}")
 
 
 class FetchError(Exception):
