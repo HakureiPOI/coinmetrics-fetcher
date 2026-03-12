@@ -61,6 +61,7 @@ df.head()
 | options | OptionsDataFetcher | 期权数据（市场列表、Greeks、IV） |
 | funding_rates | FundingRateFetcher | 永续合约资金费率 |
 | futures | FuturesDataFetcher | 期货 K 线数据 |
+| spot | SpotDataFetcher | 现货 K 线数据 |
 
 ## API 使用指南
 
@@ -143,6 +144,20 @@ fetcher = FuturesDataFetcher()
 df = fetcher.get_candles(exchange="deribit", base="btc", start_time="2024-01-01", end_time="2024-01-02")
 ```
 
+### 现货 K 线
+
+```python
+from api import SpotDataFetcher
+
+fetcher = SpotDataFetcher()
+
+# 获取现货分钟级 K 线
+df = fetcher.get_candles(exchange="binance", base="btc", start_time="2024-01-01", end_time="2024-01-02")
+
+# 指定计价货币
+df = fetcher.get_candles(exchange="binance", base="btc", quote="usdt", start_time="2024-01-01", end_time="2024-01-02")
+```
+
 ## 上下文管理器
 
 ```python
@@ -195,7 +210,8 @@ coinmetrics-fetcher/
 │   ├── timeseries.py       # 时间序列接口
 │   ├── options.py          # 期权数据模块
 │   ├── funding_rates.py    # 资金费率模块
-│   └── futures.py          # 期货 K 线模块
+│   ├── futures.py          # 期货 K 线模块
+│   └── spot.py             # 现货 K 线模块
 └── utils/
     ├── __init__.py
     └── fetch_utils.py      # 工具函数和异常类

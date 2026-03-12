@@ -9,6 +9,7 @@ from .timeseries import TimeseriesAPI
 from .options import OptionsDataFetcher, OptionFilter
 from .funding_rates import FundingRateFetcher
 from .futures import FuturesDataFetcher
+from .spot import SpotDataFetcher
 
 __all__ = [
     # 基础类
@@ -25,4 +26,6 @@ __all__ = [
     "FundingRateFetcher",
     # 期货数据
     "FuturesDataFetcher",
+    # 现货数据
+    "SpotDataFetcher",
 ]
