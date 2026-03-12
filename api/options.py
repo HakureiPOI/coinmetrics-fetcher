@@ -106,8 +106,18 @@ class OptionsDataFetcher(BaseFetcher):
 
         # 时间过滤
         df = df.copy()
-        df["listing"] = pd.to_datetime(df["listing"], errors="coerce")
-        df["expiration"] = pd.to_datetime(df["expiration"], errors="coerce")
+        listing_dt = pd.to_datetime(df["listing"], errors="coerce")
+        expiration_dt = pd.to_datetime(df["expiration"], errors="coerce")
+        
+        # 统一转换为 tz-naive
+        if listing_dt.dt.tz is not None:
+            listing_dt = listing_dt.dt.tz_convert(None)
+        if expiration_dt.dt.tz is not None:
+            expiration_dt = expiration_dt.dt.tz_convert(None)
+        
+        df["listing"] = listing_dt
+        df["expiration"] = expiration_dt
+        
         start_dt = pd.to_datetime(start_time)
         end_dt = pd.to_datetime(end_time)
         mask = (df["listing"] <= end_dt) & (df["expiration"] >= start_dt)
