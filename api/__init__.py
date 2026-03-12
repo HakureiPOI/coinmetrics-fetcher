@@ -1,4 +1,9 @@
+"""
+CoinMetrics API v4 Python 客户端
+"""
+
 from .base import CoinMetricsAPI
+from .base_fetcher import BaseFetcher
 from .reference_data import ReferenceDataAPI
 from .timeseries import TimeseriesAPI
 from .options import OptionsDataFetcher, OptionFilter, get_deribit_btc_options
@@ -8,6 +13,7 @@ from .futures import FuturesDataFetcher, get_futures_candles
 __all__ = [
     # 基础类
     "CoinMetricsAPI",
+    "BaseFetcher",
     # 参考数据
     "ReferenceDataAPI",
     # 时间序列
