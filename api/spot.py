@@ -8,7 +8,7 @@ from typing import Optional
 import pandas as pd
 
 from api.base_fetcher import BaseFetcher
-from utils import validate_time_range
+from utils import validate_time_range, ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -16,18 +16,19 @@ logger = logging.getLogger(__name__)
 class SpotDataFetcher(BaseFetcher):
     """现货数据获取器"""
 
-    def _fetch_spot_markets(self, exchange: str, base: str) -> list[str]:
+    def _fetch_spot_markets(self, exchange: str, base: str, quote: Optional[str] = None) -> list[str]:
         """获取现货市场列表"""
         df = self.ref_api.get_markets(
-            exchange=exchange, market_type="spot", base=base, verbose=False
+            exchange=exchange, market_type="spot", base=base, quote=quote, verbose=False
         )
         return df["market"].tolist()
 
-    def _fetch_candles_batch(self, markets: list[str], start_time: str, end_time: str) -> pd.DataFrame:
+    def _fetch_candles_batch(self, markets: list[str], start_time: str, end_time: str, granularity: str) -> pd.DataFrame:
         """批量获取 K 线数据"""
         return self.ts_api.get_market_candles(
             markets=",".join(markets),
             start_time=start_time, end_time=end_time,
+            granularity=granularity,
             page_size=10000, verbose=False,
         )
 
@@ -44,12 +45,13 @@ class SpotDataFetcher(BaseFetcher):
         start_time: str,
         end_time: str,
         quote: Optional[str] = None,
+        granularity: str = "1m",
         batch_size: int = 50,
         max_workers: int = 4,
         verbose: bool = True,
     ) -> pd.DataFrame:
         """
-        获取现货分钟级 K 线数据
+        获取现货 K 线数据
 
         Args:
             exchange: 交易所名称 (如 deribit, binance)
@@ -57,30 +59,30 @@ class SpotDataFetcher(BaseFetcher):
             start_time: 开始时间 (ISO 8601)
             end_time: 结束时间 (ISO 8601)
             quote: 计价货币 (如 usd, usdt)，None 表示全部
+            granularity: 数据粒度 (1m/5m/15m/30m/1h/4h/1d)，默认 1m
             batch_size: 每批请求的市场数量
             max_workers: 最大并发数
             verbose: 是否打印进度
 
         Returns:
-            K 线数据 DataFrame，包含 market, time, open, high, low, close, volume, symbol, pair
+            K 线数据 DataFrame
         """
         validate_time_range(start_time, end_time)
 
-        # 获取现货市场列表
-        df = self.ref_api.get_markets(
-            exchange=exchange, market_type="spot", base=base, quote=quote, verbose=False
-        )
-        markets = df["market"].tolist()
+        valid_granularities = {"1m", "5m", "15m", "30m", "1h", "4h", "1d"}
+        if granularity not in valid_granularities:
+            raise ValidationError(f"granularity 必须是 {valid_granularities} 之一")
 
+        markets = self._fetch_spot_markets(exchange, base, quote)
         if verbose:
-            logger.info(f"[现货K线] {exchange.upper()} {base.upper()} | {len(markets)} 个市场")
+            logger.info(f"[现货K线] {exchange.upper()} {base.upper()} | {len(markets)} 个市场 | {granularity}")
 
         if not markets:
             return pd.DataFrame()
 
         df = self._fetch_all_concurrent(
             markets, start_time, end_time, batch_size, max_workers,
-            self._fetch_candles_batch, "K线", verbose
+            self._fetch_candles_batch, "K线", verbose, granularity=granularity
         )
 
         if len(df) > 0:

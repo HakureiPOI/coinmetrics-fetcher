@@ -140,8 +140,11 @@ from api import FuturesDataFetcher
 
 fetcher = FuturesDataFetcher()
 
-# 获取所有期货的分钟级 K 线
+# 获取期货 K 线（默认分钟级）
 df = fetcher.get_candles(exchange="deribit", base="btc", start_time="2024-01-01", end_time="2024-01-02")
+
+# 指定频率
+df = fetcher.get_candles(exchange="deribit", base="btc", start_time="2024-01-01", end_time="2024-01-02", granularity="1h")
 ```
 
 ### 现货 K 线
@@ -151,11 +154,11 @@ from api import SpotDataFetcher
 
 fetcher = SpotDataFetcher()
 
-# 获取现货分钟级 K 线
+# 获取现货 K 线（默认分钟级）
 df = fetcher.get_candles(exchange="binance", base="btc", start_time="2024-01-01", end_time="2024-01-02")
 
-# 指定计价货币
-df = fetcher.get_candles(exchange="binance", base="btc", quote="usdt", start_time="2024-01-01", end_time="2024-01-02")
+# 指定计价货币和频率
+df = fetcher.get_candles(exchange="binance", base="btc", quote="usdt", start_time="2024-01-01", end_time="2024-01-02", granularity="1h")
 ```
 
 ## 上下文管理器
