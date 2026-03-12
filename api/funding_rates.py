@@ -73,6 +73,7 @@ class FundingRateFetcher(BaseFetcher):
 
         if len(df) > 0:
             df = pd.merge(df, self._get_market_metadata(exchange, base), on="market", how="left")
+            df = df.sort_values(["market", "time"]).reset_index(drop=True)
 
         if verbose:
             logger.info(f"[资金费率] 完成: {len(df)} 条")
@@ -105,6 +106,7 @@ class FundingRateFetcher(BaseFetcher):
 
         if len(df) > 0:
             df = pd.merge(df, self._get_market_metadata(exchange, base), on="market", how="left")
+            df = df.sort_values(["market", "time"]).reset_index(drop=True)
 
         if verbose:
             logger.info(f"[预计资金费率] 完成: {len(df)} 条")

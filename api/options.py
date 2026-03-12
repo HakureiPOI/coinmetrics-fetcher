@@ -40,6 +40,10 @@ class OptionsDataFetcher(BaseFetcher):
             df = df[df["option_contract_type"] == filter.option_type]
         if filter.status:
             df = df[df["status"] == filter.status]
+        
+        # 按到期日和行权价排序
+        if len(df) > 0 and "expiration" in df.columns and "strike" in df.columns:
+            df = df.sort_values(["expiration", "strike"]).reset_index(drop=True)
         return df
 
     def get_deribit_btc_options(self, quote=None, option_type=None, status=None, page_size=None, verbose=True) -> pd.DataFrame:
@@ -165,6 +169,7 @@ class OptionsDataFetcher(BaseFetcher):
 
         if not merged.empty:
             merged = pd.merge(merged, metadata, on="market", how="left")
+            merged = merged.sort_values(["market", "time"]).reset_index(drop=True)
 
         if verbose:
             logger.info(f"[Greeks/IV] 完成: {len(merged)} 条")
