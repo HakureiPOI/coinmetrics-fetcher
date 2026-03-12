@@ -8,7 +8,7 @@ CoinMetrics API v4 Python 客户端封装
 - **分页自动处理**: 自动遍历所有分页数据
 - **连接池与重试**: 内置连接池和自动重试机制
 - **日志系统**: 支持控制台和文件双输出
-- **高级封装**: 提供便捷的期权数据获取接口
+- **高级封装**: 提供便捷的期权 Greeks 和 IV 数据获取接口
 
 ## 快速开始
 
@@ -68,6 +68,34 @@ LOG_LEVEL=INFO
 LOG_FILE=logs/coinmetrics.log
 ```
 
+## 日志配置
+
+日志系统支持同时输出到控制台和文件：
+
+```python
+from config import setup_logging
+
+# 初始化日志（自动从 .env 读取配置）
+setup_logging()
+
+# 之后所有 API 操作都会记录到日志文件
+from api import OptionsDataFetcher
+fetcher = OptionsDataFetcher()
+df = fetcher.get_options_greeks_iv(
+    exchange="deribit",
+    base="btc",
+    start_time="2024-01-01",
+    end_time="2024-01-02",
+)
+```
+
+日志文件位置：`logs/coinmetrics.log`
+
+查看实时日志：
+```bash
+tail -f logs/coinmetrics.log
+```
+
 ## API 使用指南
 
 ### Reference Data API（参考数据）
@@ -123,43 +151,109 @@ df = api.get_market_candles(
     markets="deribit-btc-perp",
     start_time="2024-01-01"
 )
+
+# 获取期权 Greeks 数据
+df = api.get_market_greeks(
+    markets="deribit-BTC-27DEC24-50000-C-option",
+    start_time="2024-01-01",
+    end_time="2024-01-31",
+    granularity="1h",
+)
+
+# 获取期权 IV 数据
+df = api.get_market_implied_volatility(
+    markets="deribit-BTC-27DEC24-50000-C-option",
+    start_time="2024-01-01",
+    end_time="2024-01-31",
+)
 ```
 
 ### Options API（期权数据）
+
+#### 1. 获取期权市场列表
+
+```python
+from api import OptionsDataFetcher
+
+fetcher = OptionsDataFetcher()
+
+# 获取 Deribit BTC 期权
+df = fetcher.get_deribit_btc_options(
+    status=None,        # None=全部，"online"=在线，"offline"=已下线
+    option_type=None,   # None=全部，"call"=看涨，"put"=看跌
+    quote=None,         # None=全部，"usd"、"usdc" 等
+)
+
+# 获取 Deribit ETH 期权
+df = fetcher.get_deribit_eth_options()
+
+# 获取任意交易所期权
+df = fetcher.get_exchange_options(
+    exchange="binance",
+    base="btc",
+)
+```
+
+#### 2. 获取期权 Greeks 和 IV 数据（进阶功能）
+
+```python
+from api import OptionsDataFetcher
+
+fetcher = OptionsDataFetcher()
+
+# 获取 Deribit BTC 期权在指定时间范围内的 Greeks 和 IV 数据
+df = fetcher.get_options_greeks_iv(
+    exchange="deribit",
+    base="btc",
+    start_time="2024-01-01",
+    end_time="2024-01-31",
+    
+    # 可选过滤
+    option_type=None,       # None/"call"/"put"
+    status=None,            # None/"online"/"offline"（历史数据建议用 None）
+    
+    # 数据粒度
+    granularity="1m",       # "1m"=分钟频，"1h"=小时频，"1d"=日频
+    
+    # 批量控制
+    batch_size=100,         # 每批请求的期权数量
+    verbose=True,           # 是否打印进度
+)
+
+# 输出列：
+# - market: 市场标识符
+# - time: 时间戳
+# - option_contract_type: 期权类型 (call/put)
+# - strike: 行权价
+# - expiration: 到期时间
+# - delta, gamma, theta, vega, rho: Greeks 指标
+# - iv_mark, iv_bid, iv_ask: 隐含波动率
+```
+
+**注意事项**：
+- `status=None`（默认）：包含所有期权（推荐用于历史数据查询）
+- `status="online"`：仅在线交易的期权（已到期期权会被过滤）
+
+#### 3. 使用 OptionFilter 自定义筛选
 
 ```python
 from api import OptionsDataFetcher, OptionFilter
 
 fetcher = OptionsDataFetcher()
 
-# 方式 1: 便捷方法获取 Deribit BTC 期权
-df = fetcher.get_deribit_btc_options(
-    status="online"      # 仅在线交易
-)
-
-# 方式 2: 获取 Deribit ETH 期权
-df = fetcher.get_deribit_eth_options(
-    option_type="call",  # 仅 Call 期权
-    quote="usd"          # 仅 USD 计价
-)
-
-# 方式 3: 自定义筛选条件
 filter = OptionFilter(
-    exchange="binance",
+    exchange="deribit",
     base="btc",
     market_type="option",
-    status="online"
+    quote="usd",
+    option_type="call",
+    status="online",
 )
-df = fetcher.get_options(filter)
 
-# 方式 4: 获取并保存
-fetcher.fetch_and_save(
-    filter=OptionFilter(exchange="deribit", base="btc"),
-    output_path="data/options.csv"
-)
+df = fetcher.get_options(filter)
 ```
 
-### 便捷函数
+#### 4. 便捷函数
 
 ```python
 from api import get_deribit_btc_options
@@ -167,7 +261,7 @@ from api import get_deribit_btc_options
 # 一行代码获取并保存
 df = get_deribit_btc_options(
     output_path="data/deribit_btc_options.csv",
-    status="online"
+    status="online",
 )
 ```
 
@@ -183,6 +277,7 @@ config = Config(
     page_size=5000,
     timeout=60,
     max_retries=5,
+    log_level="DEBUG",
 )
 
 # 使用自定义配置
@@ -213,7 +308,7 @@ coinmetrics-fetcher/
 │   ├── __init__.py
 │   ├── base.py             # 基础 API 类
 │   ├── reference_data.py   # 参考数据接口（12 个）
-│   ├── timeseries.py       # 时间序列接口（27 个）
+│   ├── timeseries.py       # 时间序列接口（27 个 + Greeks/IV）
 │   └── options.py          # 期权数据获取模块
 ├── utils/
 │   ├── __init__.py
@@ -241,31 +336,43 @@ coinmetrics-fetcher/
 | `/reference-data/institution-metrics` | 机构指标元数据 |
 | `/reference-data/market-metrics` | 市场指标元数据 |
 
-### Timeseries（27 个接口）
+### Timeseries（29 个接口）
 
-主要接口包括：
+**时间序列数据**：
 - `/timeseries/asset-metrics` - 资产指标时间序列
 - `/timeseries/exchange-metrics` - 交易所指标时间序列
 - `/timeseries/market-metrics` - 市场指标时间序列
 - `/timeseries/pair-metrics` - 交易对指标时间序列
+
+**K 线和交易数据**：
 - `/timeseries/pair-candles` - 交易对 K 线数据
 - `/timeseries/market-candles` - 市场 K 线数据
 - `/timeseries/market-trades` - 市场交易数据
 - `/timeseries/market-orderbooks` - 市场订单簿
 - `/timeseries/market-quotes` - 市场报价
+
+**衍生品数据**：
 - `/timeseries/market-funding-rates` - 资金费率
+- `/timeseries/market-funding-rates-predicted` - 预测资金费率
 - `/timeseries/market-liquidations` - 清算数据
+- `/timeseries/market-openinterest` - 未平仓合约
+- `/timeseries/market-greeks` - **期权 Greeks** (delta/gamma/theta/vega/rho)
+- `/timeseries/market-implied-volatility` - **期权隐含波动率** (IV)
+
+**指数数据**：
 - `/timeseries/index-levels` - 指数点位
 - `/timeseries/index-candles` - 指数 K 线
+- `/timeseries/index-constituents` - 指数成分
 
 ## 注意事项
 
 1. **API 密钥安全**: 请勿将 `.env` 文件提交到版本控制
 2. **page_size 限制**: 最大值为 10000（根据 CoinMetrics API 规范）
-3. **速率限制**: 
+3. **速率限制**:
    - 社区版：10 请求/6 秒
    - 专业版：6000 请求/20 秒
 4. **并行限制**: 最多 10 个并行请求
+5. **历史数据查询**: 使用 `get_options_greeks_iv()` 时，建议 `status=None`（默认），因为已到期期权的状态为 `offline`
 
 ## 相关资源
 
