@@ -497,7 +497,7 @@ class OptionsDataFetcher:
         start_time: str,
         end_time: str,
         option_type: Optional[str] = None,
-        status: Optional[str] = "online",
+        status: Optional[str] = None,  # 默认不过滤，因为历史数据查询需要 offline 期权
         granularity: str = "1m",
         batch_size: int = 100,
         verbose: bool = True,
