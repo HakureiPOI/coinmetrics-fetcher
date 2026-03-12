@@ -114,8 +114,13 @@ class CoinMetricsAPI:
             page_size = self.config.page_size
         request_params["page_size"] = page_size
 
+        # 日志中隐藏 API key
+        log_params = request_params.copy()
+        if "api_key" in log_params:
+            log_params["api_key"] = "***MASKED***"
+
         logger.debug(
-            f"请求 API: {url}, params={request_params}, page_size={page_size}"
+            f"请求 API: {url}, params={log_params}, page_size={page_size}"
         )
 
         return fetch_all_pages(

@@ -66,6 +66,78 @@ class APIError(FetchError):
     pass
 
 
+class BatchFetchError(FetchError):
+    """批量获取错误，包含所有失败的批次信息"""
+
+    def __init__(self, errors: list[tuple[int, Exception]]):
+        """
+        Args:
+            errors: 失败批次列表，每个元素为 (batch_num, exception)
+        """
+        self.errors = errors
+        error_msgs = [f"批次 {num}: {e}" for num, e in errors]
+        super().__init__(f"批量获取失败 ({len(errors)} 个批次):\n" + "\n".join(error_msgs))
+
+
+class ValidationError(FetchError):
+    """参数验证错误"""
+    pass
+
+
+def validate_time_range(
+    start_time: str,
+    end_time: str,
+) -> tuple[str, str]:
+    """
+    验证时间范围参数
+
+    Args:
+        start_time: 开始时间 (ISO 8601)
+        end_time: 结束时间 (ISO 8601)
+
+    Returns:
+        验证后的 (start_time, end_time) 元组
+
+    Raises:
+        ValidationError: 时间格式无效或 start_time >= end_time
+    """
+    import re
+    from datetime import datetime
+
+    # ISO 8601 格式正则
+    iso_pattern = re.compile(
+        r"^\d{4}-\d{2}-\d{2}"  # 日期部分
+        r"(T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:?\d{2})?)?$"  # 可选的时间部分
+    )
+
+    def parse_time(t: str, name: str) -> datetime:
+        if not iso_pattern.match(t):
+            raise ValidationError(
+                f"{name} 格式无效，应为 ISO 8601 格式 (如 2024-01-01 或 2024-01-01T00:00:00Z): {t}"
+            )
+        # 尝试解析
+        try:
+            # 尝试带时间解析
+            if "T" in t:
+                if t.endswith("Z"):
+                    return datetime.fromisoformat(t.replace("Z", "+00:00"))
+                return datetime.fromisoformat(t)
+            else:
+                return datetime.fromisoformat(t)
+        except ValueError as e:
+            raise ValidationError(f"{name} 解析失败: {e}") from e
+
+    start_dt = parse_time(start_time, "start_time")
+    end_dt = parse_time(end_time, "end_time")
+
+    if start_dt >= end_dt:
+        raise ValidationError(
+            f"start_time ({start_time}) 必须早于 end_time ({end_time})"
+        )
+
+    return start_time, end_time
+
+
 def build_session(
     total_retries: int = 3,
     backoff_factor: float = 0.5,

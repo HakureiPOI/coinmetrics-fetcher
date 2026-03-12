@@ -294,30 +294,6 @@ class TimeseriesAPI(CoinMetricsAPI):
             verbose=verbose,
         )
 
-    def get_market_funding_rates(
-        self,
-        markets: str,
-        start_time: Optional[str] = None,
-        end_time: Optional[str] = None,
-        page_size: Optional[int] = None,
-        verbose: bool = True,
-    ) -> pd.DataFrame:
-        """
-        获取市场资金费率数据
-        """
-        params = {"markets": markets}
-        if start_time:
-            params["start_time"] = start_time
-        if end_time:
-            params["end_time"] = end_time
-
-        return self._request(
-            endpoint="/timeseries/market-funding-rates",
-            params=params,
-            page_size=page_size,
-            verbose=verbose,
-        )
-
     def get_market_liquidations(
         self,
         markets: str,

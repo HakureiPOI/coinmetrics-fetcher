@@ -6,15 +6,15 @@ CoinMetrics 永续合约资金费率数据获取模块
 
 import logging
 import os
-import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List, Optional, Tuple
+from typing import Optional
 
 import pandas as pd
 
 from api.reference_data import ReferenceDataAPI
 from api.timeseries import TimeseriesAPI
 from config import Config, get_config
+from utils import BatchFetchError, validate_time_range
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +52,7 @@ class FundingRateFetcher:
         self,
         exchange: str,
         base: str,
-    ) -> List[str]:
+    ) -> list[str]:
         """
         获取指定交易所和基础资产的永续合约市场列表
 
@@ -77,7 +77,7 @@ class FundingRateFetcher:
 
     def _fetch_funding_rates_batch(
         self,
-        markets: List[str],
+        markets: list[str],
         start_time: str,
         end_time: str,
     ) -> pd.DataFrame:
@@ -106,7 +106,7 @@ class FundingRateFetcher:
 
     def _fetch_predicted_rates_batch(
         self,
-        markets: List[str],
+        markets: list[str],
         start_time: str,
         end_time: str,
     ) -> pd.DataFrame:
@@ -135,7 +135,7 @@ class FundingRateFetcher:
 
     def _fetch_all_concurrent(
         self,
-        markets: List[str],
+        markets: list[str],
         start_time: str,
         end_time: str,
         batch_size: int,
@@ -162,6 +162,7 @@ class FundingRateFetcher:
         """
         all_dfs = []
         total_batches = (len(markets) + batch_size - 1) // batch_size
+        errors: list[tuple[int, Exception]] = []
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = {}
@@ -186,6 +187,11 @@ class FundingRateFetcher:
                         )
                 except Exception as e:
                     logger.error(f"{data_type}: 批次 {batch_num} 失败 - {e}")
+                    errors.append((batch_num, e))
+
+        # 如果有错误，抛出异常
+        if errors:
+            raise BatchFetchError(errors)
 
         if all_dfs:
             return pd.concat(all_dfs, ignore_index=True)
@@ -234,6 +240,9 @@ class FundingRateFetcher:
             ... )
             >>> # 每天 3 条数据（00:00, 08:00, 16:00 UTC）
         """
+        # 验证时间参数
+        validate_time_range(start_time, end_time)
+
         if verbose:
             logger.info("=" * 60)
             logger.info(f"获取 {exchange.upper()} {base.upper()} 永续合约资金费率（干净版）")
@@ -344,6 +353,9 @@ class FundingRateFetcher:
             ...     end_time="2024-01-31",
             ... )
         """
+        # 验证时间参数
+        validate_time_range(start_time, end_time)
+
         if verbose:
             logger.info("=" * 60)
             logger.info(f"获取 {exchange.upper()} {base.upper()} 永续合约资金费率")
@@ -436,6 +448,9 @@ class FundingRateFetcher:
         Returns:
             预计资金费率数据 DataFrame
         """
+        # 验证时间参数
+        validate_time_range(start_time, end_time)
+
         if verbose:
             logger.info("=" * 60)
             logger.info(f"获取 {exchange.upper()} {base.upper()} 永续合约预计资金费率")
@@ -530,6 +545,18 @@ class FundingRateFetcher:
         df.to_csv(output_path, index=False)
         logger.info(f"数据已保存到：{output_path}")
         return output_path
+
+    def close(self) -> None:
+        """关闭底层 API Sessions"""
+        self.ref_api.close()
+        self.ts_api.close()
+        logger.info("FundingRateFetcher Sessions 已关闭")
+
+    def __enter__(self) -> "FundingRateFetcher":
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        self.close()
 
 
 def get_funding_rates(

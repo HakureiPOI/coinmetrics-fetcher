@@ -376,13 +376,61 @@ api = ReferenceDataAPI(config=config)
 
 ### 上下文管理器
 
-```python
-from api import ReferenceDataAPI
+所有 API 类都支持上下文管理器，确保 Session 自动关闭：
 
+```python
+from api import ReferenceDataAPI, OptionsDataFetcher, FundingRateFetcher
+
+# ReferenceDataAPI
 with ReferenceDataAPI() as api:
     df = api.get_exchanges()
-# Session 自动关闭
+
+# OptionsDataFetcher
+with OptionsDataFetcher() as fetcher:
+    df = fetcher.get_deribit_btc_options()
+
+# FundingRateFetcher
+with FundingRateFetcher() as fetcher:
+    df = fetcher.get_funding_rates(
+        exchange="deribit",
+        base="btc",
+        start_time="2024-01-01",
+        end_time="2024-01-31",
+    )
 ```
+
+### 错误处理
+
+项目提供自定义异常类，便于错误处理：
+
+```python
+from utils import BatchFetchError, ValidationError
+
+fetcher = OptionsDataFetcher()
+
+try:
+    df = fetcher.get_options_greeks_iv(
+        exchange="deribit",
+        base="btc",
+        start_time="2024-01-01",
+        end_time="2024-01-31",
+    )
+except ValidationError as e:
+    # 参数验证错误（如时间格式无效、start_time >= end_time）
+    print(f"参数错误: {e}")
+except BatchFetchError as e:
+    # 并发批量获取时部分批次失败
+    print(f"失败批次: {e.errors}")  # e.errors 是 list[tuple[int, Exception]]
+    for batch_num, error in e.errors:
+        print(f"  批次 {batch_num}: {error}")
+```
+
+**可用异常类**：
+- `ValidationError`: 参数验证错误（时间格式、范围等）
+- `BatchFetchError`: 批量获取错误，包含所有失败批次信息
+- `APIError`: API 响应错误
+- `PaginationError`: 分页错误
+- `FetchError`: 所有错误的基类
 
 ## 项目结构
 
@@ -399,10 +447,11 @@ coinmetrics-fetcher/
 │   ├── base.py             # 基础 API 类
 │   ├── reference_data.py   # 参考数据接口（12 个）
 │   ├── timeseries.py       # 时间序列接口（27 个 + Greeks/IV）
-│   └── options.py          # 期权数据获取模块（并发优化）
+│   ├── options.py          # 期权数据获取模块（并发优化）
+│   └── funding_rates.py    # 资金费率获取模块
 ├── utils/
 │   ├── __init__.py
-│   └── fetch_utils.py      # 底层分页抓取工具
+│   └── fetch_utils.py      # 底层分页抓取工具、异常类、验证函数
 ├── data/                   # 数据输出目录（.gitignore）
 └── logs/                   # 日志目录（.gitignore）
 ```
@@ -456,7 +505,9 @@ coinmetrics-fetcher/
 
 ## 注意事项
 
-1. **API 密钥安全**: 请勿将 `.env` 文件提交到版本控制
+1. **API 密钥安全**: 
+   - 请勿将 `.env` 文件提交到版本控制
+   - API 密钥在日志中自动脱敏显示为 `***MASKED***`
 2. **page_size 限制**: 最大值为 10000（根据 CoinMetrics API 规范）
 3. **速率限制**:
    - 社区版：10 请求/6 秒
@@ -464,6 +515,7 @@ coinmetrics-fetcher/
 4. **并行限制**: 最多 10 个并行请求
 5. **历史数据查询**: 使用 `get_options_greeks_iv()` 时，建议 `status=None`（默认），因为已到期期权的状态为 `offline`
 6. **并发性能**: `max_workers=4` 可获得约 60% 性能提升，过高并发数收益递减
+7. **时间参数验证**: 所有时间序列接口自动验证 ISO 8601 格式和时间范围（start_time < end_time）
 
 ## 相关资源
 

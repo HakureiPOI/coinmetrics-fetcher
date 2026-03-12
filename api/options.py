@@ -6,16 +6,16 @@ CoinMetrics 期权数据获取模块
 
 import logging
 import os
-import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
+from typing import Optional
 
 import pandas as pd
 
 from api.reference_data import ReferenceDataAPI
 from api.timeseries import TimeseriesAPI
 from config import Config, get_config
+from utils import BatchFetchError, ValidationError, validate_time_range
 
 logger = logging.getLogger(__name__)
 
@@ -198,7 +198,7 @@ class OptionsDataFetcher:
         status: Optional[str],
         start_time: str,
         end_time: str,
-    ) -> Tuple[List[str], pd.DataFrame]:
+    ) -> tuple[list[str], pd.DataFrame]:
         """
         获取符合条件的期权市场列表，并根据时间范围过滤
 
@@ -252,7 +252,7 @@ class OptionsDataFetcher:
 
     def _fetch_greeks_batch(
         self,
-        markets: List[str],
+        markets: list[str],
         start_time: str,
         end_time: str,
         granularity: str,
@@ -284,7 +284,7 @@ class OptionsDataFetcher:
 
     def _fetch_all_greeks(
         self,
-        markets: List[str],
+        markets: list[str],
         start_time: str,
         end_time: str,
         granularity: str,
@@ -309,6 +309,7 @@ class OptionsDataFetcher:
         """
         all_dfs = []
         total_batches = (len(markets) + batch_size - 1) // batch_size
+        errors: list[tuple[int, Exception]] = []
 
         # 使用线程池并发请求
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -335,6 +336,11 @@ class OptionsDataFetcher:
                         logger.info(f"Greeks: 完成批次 {batch_num}/{total_batches} ({completed}/{total_batches})")
                 except Exception as e:
                     logger.error(f"Greeks: 批次 {batch_num} 失败 - {e}")
+                    errors.append((batch_num, e))
+
+        # 如果有错误，抛出异常
+        if errors:
+            raise BatchFetchError(errors)
 
         if all_dfs:
             return pd.concat(all_dfs, ignore_index=True)
@@ -342,7 +348,7 @@ class OptionsDataFetcher:
 
     def _fetch_iv_batch(
         self,
-        markets: List[str],
+        markets: list[str],
         start_time: str,
         end_time: str,
         granularity: str,
@@ -374,7 +380,7 @@ class OptionsDataFetcher:
 
     def _fetch_all_iv(
         self,
-        markets: List[str],
+        markets: list[str],
         start_time: str,
         end_time: str,
         granularity: str,
@@ -399,6 +405,7 @@ class OptionsDataFetcher:
         """
         all_dfs = []
         total_batches = (len(markets) + batch_size - 1) // batch_size
+        errors: list[tuple[int, Exception]] = []
 
         # 使用线程池并发请求
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -425,6 +432,11 @@ class OptionsDataFetcher:
                         logger.info(f"IV: 完成批次 {batch_num}/{total_batches} ({completed}/{total_batches})")
                 except Exception as e:
                     logger.error(f"IV: 批次 {batch_num} 失败 - {e}")
+                    errors.append((batch_num, e))
+
+        # 如果有错误，抛出异常
+        if errors:
+            raise BatchFetchError(errors)
 
         if all_dfs:
             return pd.concat(all_dfs, ignore_index=True)
@@ -559,6 +571,16 @@ class OptionsDataFetcher:
             ... )
             >>> print(df.columns.tolist())
         """
+        # 验证时间参数
+        validate_time_range(start_time, end_time)
+
+        # 验证 granularity
+        valid_granularities = {"1m", "5m", "15m", "30m", "1h", "4h", "1d"}
+        if granularity not in valid_granularities:
+            raise ValidationError(
+                f"granularity 必须是 {valid_granularities} 之一，当前: {granularity}"
+            )
+
         if verbose:
             logger.info("=" * 60)
             logger.info(f"获取 {exchange.upper()} {base.upper()} 期权 Greeks 和 IV 数据")
@@ -677,6 +699,18 @@ class OptionsDataFetcher:
         """
         df = self.get_options(filter, page_size=page_size, verbose=verbose)
         return self.save_to_csv(df, output_path, overwrite=overwrite)
+
+    def close(self) -> None:
+        """关闭底层 API Sessions"""
+        self.ref_api.close()
+        self.ts_api.close()
+        logger.info("OptionsDataFetcher Sessions 已关闭")
+
+    def __enter__(self) -> "OptionsDataFetcher":
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        self.close()
 
 
 def get_deribit_btc_options(
