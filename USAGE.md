@@ -9,13 +9,13 @@
 ### 1. 安装
 
 ```bash
-pip install git+https://github.com/your-username/coinmetrics-fetcher.git
+pip install git+https://github.com/HakureiPOI/coinmetrics-fetcher.git
 ```
 
 或在 Colab/Notebook 中：
 
 ```python
-!pip install git+https://github.com/your-username/coinmetrics-fetcher.git
+!pip install git+https://github.com/HakureiPOI/coinmetrics-fetcher.git
 ```
 
 ### 2. 配置 API 密钥
@@ -109,7 +109,7 @@ df = get_funding_rates(
 ### 1. 克隆并安装
 
 ```bash
-git clone https://github.com/your-username/coinmetrics-fetcher.git
+git clone https://github.com/HakureiPOI/coinmetrics-fetcher.git
 cd coinmetrics-fetcher
 pip install -e .
 ```
@@ -136,7 +136,7 @@ df = fetcher.get_deribit_btc_options()
 
 ```python
 # ========== Cell 1: 安装 ==========
-!pip install git+https://github.com/your-username/coinmetrics-fetcher.git
+!pip install git+https://github.com/HakureiPOI/coinmetrics-fetcher.git
 
 # ========== Cell 2: 配置 API 密钥 ==========
 import os
