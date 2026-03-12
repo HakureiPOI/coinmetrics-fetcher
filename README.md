@@ -169,6 +169,79 @@ df = api.get_market_implied_volatility(
 )
 ```
 
+### Funding Rates API（永续合约资金费率）
+
+#### 1. 获取资金费率数据
+
+```python
+from api import FundingRateFetcher
+
+fetcher = FundingRateFetcher()
+
+# 获取 Deribit BTC 永续合约资金费率
+df = fetcher.get_funding_rates(
+    exchange="deribit",
+    base="btc",
+    start_time="2024-01-01",
+    end_time="2024-01-31",
+)
+
+# 获取预计资金费率
+df = fetcher.get_predicted_funding_rates(
+    exchange="deribit",
+    base="btc",
+    start_time="2024-01-01",
+    end_time="2024-01-31",
+)
+```
+
+#### 2. 同时获取资金费率 + 预计资金费率
+
+```python
+from api import FundingRateFetcher
+
+fetcher = FundingRateFetcher()
+
+# 同时获取两者并自动合并
+df = fetcher.get_all_funding_rates(
+    exchange="deribit",
+    base="btc",
+    start_time="2024-01-01",
+    end_time="2024-01-31",
+    
+    # 并发控制
+    batch_size=50,        # 每批请求的市场数量
+    max_workers=4,        # 最大并发数
+    verbose=True,         # 是否打印进度
+)
+
+# 输出字段:
+# - market: 市场标识符
+# - time: 时间戳
+# - symbol: 合约符号 (如 BTC-PERPETUAL)
+# - pair: 交易对 (如 btc-usd)
+# - funding_rate: 资金费率
+# - rate_predicted: 预计资金费率
+# - database_time: 数据库时间
+# - period: 计息周期
+# - interval: 计息间隔
+```
+
+#### 3. 便捷函数
+
+```python
+from api import get_funding_rates
+
+# 一行代码获取并保存
+df = get_funding_rates(
+    exchange="deribit",
+    base="btc",
+    start_time="2024-01-01",
+    end_time="2024-01-31",
+    output_path="data/funding_rates.csv",
+)
+```
+
 ### Options API（期权数据）
 
 #### 1. 获取期权市场列表
