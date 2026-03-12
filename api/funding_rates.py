@@ -115,65 +115,6 @@ class FundingRateFetcher(BaseFetcher):
             logger.info(f"完成，共 {len(df)} 条记录")
         return df
 
-    def get_funding_rates_clean(
-        self,
-        exchange: str,
-        base: str,
-        start_time: str,
-        end_time: str,
-        batch_size: int = 50,
-        max_workers: int = 4,
-        dropna: bool = True,
-        verbose: bool = True,
-    ) -> pd.DataFrame:
-        """
-        获取永续合约资金费率数据（干净版，过滤 NaN）
-
-        Args:
-            exchange: 交易所名称
-            base: 基础资产
-            start_time: 开始时间 (ISO 8601)
-            end_time: 结束时间 (ISO 8601)
-            batch_size: 每批请求的市场数量
-            max_workers: 最大并发数
-            dropna: 是否过滤 NaN 记录
-            verbose: 是否打印进度
-
-        Returns:
-            资金费率数据 DataFrame
-        """
-        validate_time_range(start_time, end_time)
-
-        if verbose:
-            logger.info("=" * 60)
-            logger.info(f"获取 {exchange.upper()} {base.upper()} 永续合约资金费率（干净版）")
-            logger.info(f"时间范围：{start_time} 至 {end_time}")
-
-        markets = self._fetch_perpetual_markets(exchange, base)
-        if verbose:
-            logger.info(f"找到 {len(markets)} 个永续合约")
-
-        if not markets:
-            return pd.DataFrame()
-
-        df = self._fetch_all_concurrent(
-            markets, start_time, end_time, batch_size, max_workers,
-            self._fetch_funding_rates_batch, "资金费率", verbose
-        )
-
-        if dropna and len(df) > 0:
-            before = len(df)
-            df = df.dropna(subset=["rate"])
-            if verbose:
-                logger.info(f"过滤 NaN: {before} -> {len(df)} 条")
-
-        if len(df) > 0:
-            df = pd.merge(df, self._get_market_metadata(exchange, base), on="market", how="left")
-
-        if verbose:
-            logger.info(f"完成，共 {len(df)} 条记录")
-        return df
-
     def get_predicted_funding_rates(
         self,
         exchange: str,
