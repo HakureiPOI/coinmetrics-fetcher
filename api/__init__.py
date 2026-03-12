@@ -6,9 +6,9 @@ from .base import CoinMetricsAPI
 from .base_fetcher import BaseFetcher
 from .reference_data import ReferenceDataAPI
 from .timeseries import TimeseriesAPI
-from .options import OptionsDataFetcher, OptionFilter, get_deribit_btc_options
-from .funding_rates import FundingRateFetcher, get_funding_rates
-from .futures import FuturesDataFetcher, get_futures_candles
+from .options import OptionsDataFetcher, OptionFilter
+from .funding_rates import FundingRateFetcher
+from .futures import FuturesDataFetcher
 
 __all__ = [
     # 基础类
@@ -21,11 +21,8 @@ __all__ = [
     # 期权数据
     "OptionsDataFetcher",
     "OptionFilter",
-    "get_deribit_btc_options",
     # 资金费率
     "FundingRateFetcher",
-    "get_funding_rates",
     # 期货数据
     "FuturesDataFetcher",
-    "get_futures_candles",
 ]

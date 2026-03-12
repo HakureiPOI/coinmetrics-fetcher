@@ -281,19 +281,3 @@ class OptionsDataFetcher(BaseFetcher):
         if verbose:
             logger.info(f"完成，共 {len(merged)} 条记录")
         return merged
-
-
-def get_deribit_btc_options(
-    output_path: Optional[str] = None,
-    quote: Optional[str] = None,
-    option_type: Optional[str] = None,
-    status: Optional[str] = None,
-    page_size: Optional[int] = None,
-    verbose: bool = True,
-) -> pd.DataFrame:
-    """便捷函数：获取 Deribit BTC 期权列表"""
-    fetcher = OptionsDataFetcher()
-    df = fetcher.get_deribit_btc_options(quote, option_type, status, page_size, verbose)
-    if output_path:
-        fetcher.save_to_csv(df, output_path)
-    return df

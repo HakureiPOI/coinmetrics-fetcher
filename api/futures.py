@@ -101,24 +101,3 @@ class FuturesDataFetcher(BaseFetcher):
         if verbose:
             logger.info(f"完成，共 {len(df)} 条记录")
         return df
-
-
-def get_futures_candles(
-    exchange: str,
-    base: str,
-    start_time: str,
-    end_time: str,
-    output_path: Optional[str] = None,
-    batch_size: int = 50,
-    max_workers: int = 4,
-    verbose: bool = True,
-) -> pd.DataFrame:
-    """便捷函数：获取期货 K 线数据"""
-    fetcher = FuturesDataFetcher()
-    df = fetcher.get_candles(
-        exchange=exchange, base=base, start_time=start_time, end_time=end_time,
-        batch_size=batch_size, max_workers=max_workers, verbose=verbose
-    )
-    if output_path:
-        fetcher.save_to_csv(df, output_path)
-    return df

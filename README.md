@@ -128,9 +128,6 @@ fetcher = FundingRateFetcher()
 # 获取资金费率
 df = fetcher.get_funding_rates(exchange="deribit", base="btc", start_time="2024-01-01", end_time="2024-01-31")
 
-# 获取干净版（过滤 NaN）
-df = fetcher.get_funding_rates_clean(exchange="deribit", base="btc", start_time="2024-01-01", end_time="2024-01-31")
-
 # 获取预计资金费率
 df = fetcher.get_predicted_funding_rates(exchange="deribit", base="btc", start_time="2024-01-01", end_time="2024-01-31")
 ```
@@ -144,17 +141,6 @@ fetcher = FuturesDataFetcher()
 
 # 获取所有期货的分钟级 K 线
 df = fetcher.get_candles(exchange="deribit", base="btc", start_time="2024-01-01", end_time="2024-01-02")
-```
-
-## 便捷函数
-
-```python
-from api import get_deribit_btc_options, get_funding_rates, get_futures_candles
-
-# 一行获取并保存
-df = get_deribit_btc_options(output_path="data/options.csv")
-df = get_funding_rates("deribit", "btc", "2024-01-01", "2024-01-31", output_path="data/funding.csv")
-df = get_futures_candles("deribit", "btc", "2024-01-01", "2024-01-02", output_path="data/candles.csv")
 ```
 
 ## 上下文管理器
