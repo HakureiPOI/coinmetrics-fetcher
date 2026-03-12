@@ -178,13 +178,17 @@ from api import FundingRateFetcher
 
 fetcher = FundingRateFetcher()
 
-# 获取 Deribit BTC 永续合约资金费率（完整时间序列，包含 NaN）
+# 获取 Deribit BTC 永续合约资金费率（完整时间序列）
 df = fetcher.get_funding_rates(
     exchange="deribit",
     base="btc",
     start_time="2024-01-01",
     end_time="2024-01-31",
 )
+
+# 数据特点:
+# - 每小时更新一次
+# - 包含所有时间点的记录
 ```
 
 #### 2. 获取资金费率数据（干净版，推荐）
@@ -204,7 +208,7 @@ df = fetcher.get_funding_rates_clean(
 )
 
 # 数据特点:
-# - 资金费率每小时更新一次
+# - 每小时更新一次
 # - 无 NaN 值，数据连续
 # - 适合只需要实际资金费率数据的场景
 ```
@@ -223,41 +227,13 @@ df = fetcher.get_predicted_funding_rates(
     start_time="2024-01-01",
     end_time="2024-01-31",
 )
+
+# 数据特点:
+# - 每分钟更新一次
+# - 数据连续无缺失
 ```
 
-#### 4. 同时获取资金费率 + 预计资金费率
-
-```python
-from api import FundingRateFetcher
-
-fetcher = FundingRateFetcher()
-
-# 同时获取两者并自动合并
-df = fetcher.get_all_funding_rates(
-    exchange="deribit",
-    base="btc",
-    start_time="2024-01-01",
-    end_time="2024-01-31",
-
-    # 并发控制
-    batch_size=50,        # 每批请求的市场数量
-    max_workers=4,        # 最大并发数
-    verbose=True,         # 是否打印进度
-)
-
-# 输出字段:
-# - market: 市场标识符
-# - time: 时间戳
-# - symbol: 合约符号 (如 BTC-PERPETUAL)
-# - pair: 交易对 (如 btc-usd)
-# - funding_rate: 资金费率
-# - rate_predicted: 预计资金费率
-# - database_time: 数据库时间
-# - period: 计息周期
-# - interval: 计息间隔
-```
-
-#### 5. 便捷函数
+#### 4. 便捷函数
 
 ```python
 from api import get_funding_rates
@@ -271,6 +247,8 @@ df = get_funding_rates(
     output_path="data/funding_rates.csv",
 )
 ```
+
+**注意**：资金费率和预计资金费率是两个独立的接口，数据粒度不同（小时 vs 分钟），建议分别获取。
 
 ### Options API（期权数据）
 
