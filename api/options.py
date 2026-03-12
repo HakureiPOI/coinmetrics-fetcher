@@ -7,6 +7,7 @@ CoinMetrics 期权数据获取模块
 import logging
 import os
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
@@ -288,10 +289,11 @@ class OptionsDataFetcher:
         end_time: str,
         granularity: str,
         batch_size: int,
+        max_workers: int = 4,
         verbose: bool = True,
     ) -> pd.DataFrame:
         """
-        分批获取所有 Greeks 数据
+        并发获取所有 Greeks 数据（使用线程池）
 
         Args:
             markets: 市场列表
@@ -299,6 +301,7 @@ class OptionsDataFetcher:
             end_time: 结束时间
             granularity: 数据粒度
             batch_size: 每批数量
+            max_workers: 最大并发数
             verbose: 是否打印进度
 
         Returns:
@@ -307,20 +310,31 @@ class OptionsDataFetcher:
         all_dfs = []
         total_batches = (len(markets) + batch_size - 1) // batch_size
 
-        for i in range(0, len(markets), batch_size):
-            batch = markets[i : i + batch_size]
-            batch_num = i // batch_size + 1
+        # 使用线程池并发请求
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            # 提交所有任务
+            futures = {}
+            for i in range(0, len(markets), batch_size):
+                batch = markets[i : i + batch_size]
+                batch_num = i // batch_size + 1
+                future = executor.submit(
+                    self._fetch_greeks_batch, batch, start_time, end_time, granularity
+                )
+                futures[future] = batch_num
 
-            if verbose:
-                logger.info(f"Greeks: 请求批次 {batch_num}/{total_batches} ({len(batch)} 个期权)")
-
-            df = self._fetch_greeks_batch(batch, start_time, end_time, granularity)
-            if len(df) > 0:
-                all_dfs.append(df)
-
-            # 速率限制
-            if i + batch_size < len(markets):
-                time.sleep(0.2)
+            # 收集结果
+            completed = 0
+            for future in as_completed(futures):
+                batch_num = futures[future]
+                completed += 1
+                try:
+                    df = future.result()
+                    if len(df) > 0:
+                        all_dfs.append(df)
+                    if verbose:
+                        logger.info(f"Greeks: 完成批次 {batch_num}/{total_batches} ({completed}/{total_batches})")
+                except Exception as e:
+                    logger.error(f"Greeks: 批次 {batch_num} 失败 - {e}")
 
         if all_dfs:
             return pd.concat(all_dfs, ignore_index=True)
@@ -365,10 +379,11 @@ class OptionsDataFetcher:
         end_time: str,
         granularity: str,
         batch_size: int,
+        max_workers: int = 4,
         verbose: bool = True,
     ) -> pd.DataFrame:
         """
-        分批获取所有 IV 数据
+        并发获取所有 IV 数据（使用线程池）
 
         Args:
             markets: 市场列表
@@ -376,6 +391,7 @@ class OptionsDataFetcher:
             end_time: 结束时间
             granularity: 数据粒度
             batch_size: 每批数量
+            max_workers: 最大并发数
             verbose: 是否打印进度
 
         Returns:
@@ -384,20 +400,31 @@ class OptionsDataFetcher:
         all_dfs = []
         total_batches = (len(markets) + batch_size - 1) // batch_size
 
-        for i in range(0, len(markets), batch_size):
-            batch = markets[i : i + batch_size]
-            batch_num = i // batch_size + 1
+        # 使用线程池并发请求
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            # 提交所有任务
+            futures = {}
+            for i in range(0, len(markets), batch_size):
+                batch = markets[i : i + batch_size]
+                batch_num = i // batch_size + 1
+                future = executor.submit(
+                    self._fetch_iv_batch, batch, start_time, end_time, granularity
+                )
+                futures[future] = batch_num
 
-            if verbose:
-                logger.info(f"IV: 请求批次 {batch_num}/{total_batches} ({len(batch)} 个期权)")
-
-            df = self._fetch_iv_batch(batch, start_time, end_time, granularity)
-            if len(df) > 0:
-                all_dfs.append(df)
-
-            # 速率限制
-            if i + batch_size < len(markets):
-                time.sleep(0.2)
+            # 收集结果
+            completed = 0
+            for future in as_completed(futures):
+                batch_num = futures[future]
+                completed += 1
+                try:
+                    df = future.result()
+                    if len(df) > 0:
+                        all_dfs.append(df)
+                    if verbose:
+                        logger.info(f"IV: 完成批次 {batch_num}/{total_batches} ({completed}/{total_batches})")
+                except Exception as e:
+                    logger.error(f"IV: 批次 {batch_num} 失败 - {e}")
 
         if all_dfs:
             return pd.concat(all_dfs, ignore_index=True)
@@ -500,6 +527,7 @@ class OptionsDataFetcher:
         status: Optional[str] = None,  # 默认不过滤，因为历史数据查询需要 offline 期权
         granularity: str = "1m",
         batch_size: int = 100,
+        max_workers: int = 4,
         verbose: bool = True,
     ) -> pd.DataFrame:
         """
@@ -514,6 +542,7 @@ class OptionsDataFetcher:
             status: 状态 (online/offline)，None 表示全部
             granularity: 数据粒度，默认 "1m" (分钟频)
             batch_size: 每批请求的期权数量
+            max_workers: 最大并发数，默认 4
             verbose: 是否打印进度
 
         Returns:
@@ -563,7 +592,7 @@ class OptionsDataFetcher:
             logger.info("步骤 2/4: 获取 Greeks 数据...")
 
         greeks_df = self._fetch_all_greeks(
-            markets, start_time, end_time, granularity, batch_size, verbose
+            markets, start_time, end_time, granularity, batch_size, max_workers, verbose
         )
 
         if verbose:
@@ -574,7 +603,7 @@ class OptionsDataFetcher:
             logger.info("步骤 3/4: 获取 IV 数据...")
 
         iv_df = self._fetch_all_iv(
-            markets, start_time, end_time, granularity, batch_size, verbose
+            markets, start_time, end_time, granularity, batch_size, max_workers, verbose
         )
 
         if verbose:
