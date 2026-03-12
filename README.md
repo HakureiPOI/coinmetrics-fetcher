@@ -250,6 +250,42 @@ df = get_funding_rates(
 
 **注意**：资金费率和预计资金费率是两个独立的接口，数据粒度不同（小时 vs 分钟），建议分别获取。
 
+#### 5. 获取期货 K 线数据
+
+```python
+from api import FundingRateFetcher
+
+fetcher = FundingRateFetcher()
+
+# 获取所有期货（永续+交割）的分钟级 K 线数据
+df = fetcher.get_futures_candles(
+    exchange="deribit",
+    base="btc",
+    start_time="2024-01-01",
+    end_time="2024-01-02",
+)
+
+# 数据特点:
+# - 分钟级 K 线数据
+# - 包含所有期货市场（永续合约和交割合约）
+# - 输出字段: market, time, open, high, low, close, volume, symbol, pair
+```
+
+#### 6. 便捷函数
+
+```python
+from api import get_futures_candles
+
+# 一行代码获取并保存
+df = get_futures_candles(
+    exchange="deribit",
+    base="btc",
+    start_time="2024-01-01",
+    end_time="2024-01-02",
+    output_path="data/futures_candles.csv",
+)
+```
+
 ### Options API（期权数据）
 
 #### 1. 获取期权市场列表
