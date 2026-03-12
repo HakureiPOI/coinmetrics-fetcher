@@ -349,19 +349,18 @@ def _convert_dtypes(df: pd.DataFrame) -> pd.DataFrame:
             # 时间列
             if any(kw in col_lower for kw in time_keywords):
                 try:
-                    df[col] = pd.to_datetime(df[col], errors='ignore')
-                except Exception:
+                    df[col] = pd.to_datetime(df[col])
+                except (ValueError, TypeError):
                     pass
             # 布尔列
             elif any(kw in col_lower for kw in bool_keywords):
                 try:
                     df[col] = df[col].astype(bool)
-                except Exception:
+                except (ValueError, TypeError):
                     pass
             # 尝试转换为数值
             else:
                 try:
-                    # 检查是否可以转换为数值
                     sample = df[col].dropna().head(100)
                     if len(sample) > 0:
                         pd.to_numeric(sample, errors='raise')
