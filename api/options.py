@@ -312,7 +312,7 @@ class OptionsDataFetcher:
             batch_num = i // batch_size + 1
 
             if verbose:
-                print(f"Greeks: 请求批次 {batch_num}/{total_batches} ({len(batch)} 个期权)")
+                logger.info(f"Greeks: 请求批次 {batch_num}/{total_batches} ({len(batch)} 个期权)")
 
             df = self._fetch_greeks_batch(batch, start_time, end_time, granularity)
             if len(df) > 0:
@@ -389,7 +389,7 @@ class OptionsDataFetcher:
             batch_num = i // batch_size + 1
 
             if verbose:
-                print(f"IV: 请求批次 {batch_num}/{total_batches} ({len(batch)} 个期权)")
+                logger.info(f"IV: 请求批次 {batch_num}/{total_batches} ({len(batch)} 个期权)")
 
             df = self._fetch_iv_batch(batch, start_time, end_time, granularity)
             if len(df) > 0:
@@ -531,16 +531,15 @@ class OptionsDataFetcher:
             >>> print(df.columns.tolist())
         """
         if verbose:
-            print("=" * 60)
-            print(f"获取 {exchange.upper()} {base.upper()} 期权 Greeks 和 IV 数据")
-            print("=" * 60)
-            print(f"时间范围：{start_time} 至 {end_time}")
-            print(f"数据粒度：{granularity}")
-            print()
+            logger.info("=" * 60)
+            logger.info(f"获取 {exchange.upper()} {base.upper()} 期权 Greeks 和 IV 数据")
+            logger.info("=" * 60)
+            logger.info(f"时间范围：{start_time} 至 {end_time}")
+            logger.info(f"数据粒度：{granularity}")
 
         # 步骤 1: 获取期权列表（包含时间过滤）
         if verbose:
-            print("步骤 1/4: 获取期权列表...")
+            logger.info("步骤 1/4: 获取期权列表...")
 
         markets, metadata = self._fetch_option_markets(
             exchange=exchange,
@@ -552,51 +551,45 @@ class OptionsDataFetcher:
         )
 
         if verbose:
-            print(f"  找到 {len(markets)} 个符合条件的期权")
+            logger.info(f"  找到 {len(markets)} 个符合条件的期权")
 
         if not markets:
             if verbose:
-                print("  警告：没有找到符合条件的期权")
+                logger.warning("没有找到符合条件的期权")
             return pd.DataFrame()
 
         # 步骤 2: 获取 Greeks 数据
         if verbose:
-            print()
-            print("步骤 2/4: 获取 Greeks 数据...")
+            logger.info("步骤 2/4: 获取 Greeks 数据...")
 
         greeks_df = self._fetch_all_greeks(
             markets, start_time, end_time, granularity, batch_size, verbose
         )
 
         if verbose:
-            print(f"  获取到 {len(greeks_df)} 条 Greeks 记录")
+            logger.info(f"  获取到 {len(greeks_df)} 条 Greeks 记录")
 
         # 步骤 3: 获取 IV 数据
         if verbose:
-            print()
-            print("步骤 3/4: 获取 IV 数据...")
+            logger.info("步骤 3/4: 获取 IV 数据...")
 
         iv_df = self._fetch_all_iv(
             markets, start_time, end_time, granularity, batch_size, verbose
         )
 
         if verbose:
-            print(f"  获取到 {len(iv_df)} 条 IV 记录")
+            logger.info(f"  获取到 {len(iv_df)} 条 IV 记录")
 
         # 步骤 4: 合并数据
         if verbose:
-            print()
-            print("步骤 4/4: 合并数据...")
+            logger.info("步骤 4/4: 合并数据...")
 
         merged_df = self._merge_greeks_iv(greeks_df, iv_df)
         result = self._enrich_metadata(merged_df, metadata)
 
         if verbose:
-            print(f"  最终数据：{len(result)} 条记录")
-            print()
-            print("=" * 60)
-            print("完成!")
-            print("=" * 60)
+            logger.info(f"  最终数据：{len(result)} 条记录")
+            logger.info("完成!")
 
         return result
 
