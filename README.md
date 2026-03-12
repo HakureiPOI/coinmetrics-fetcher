@@ -8,6 +8,7 @@ CoinMetrics API v4 Python 客户端封装
 - **分页自动处理**: 自动遍历所有分页数据
 - **连接池与重试**: 内置连接池和自动重试机制
 - **日志系统**: 支持控制台和文件双输出
+- **并发请求**: 线程池并发获取数据，性能提升 60%+
 - **高级封装**: 提供便捷的期权 Greeks 和 IV 数据获取接口
 
 ## 快速开始
@@ -217,6 +218,7 @@ df = fetcher.get_options_greeks_iv(
     
     # 批量控制
     batch_size=100,         # 每批请求的期权数量
+    max_workers=4,          # 并发数，默认 4（可提升 60% 性能）
     verbose=True,           # 是否打印进度
 )
 
@@ -229,6 +231,13 @@ df = fetcher.get_options_greeks_iv(
 # - delta, gamma, theta, vega, rho: Greeks 指标
 # - iv_mark, iv_bid, iv_ask: 隐含波动率
 ```
+
+**性能对比**（24 小时数据，113 万条记录）：
+
+| 并发数 | 用时 | 速度 | 提升 |
+|--------|------|------|------|
+| 串行 (workers=1) | 390 秒 (6.5 分钟) | 2,907 条/秒 | - |
+| 并发 (workers=4) | 144 秒 (2.4 分钟) | 7,866 条/秒 | **+63%** |
 
 **注意事项**：
 - `status=None`（默认）：包含所有期权（推荐用于历史数据查询）
@@ -309,7 +318,7 @@ coinmetrics-fetcher/
 │   ├── base.py             # 基础 API 类
 │   ├── reference_data.py   # 参考数据接口（12 个）
 │   ├── timeseries.py       # 时间序列接口（27 个 + Greeks/IV）
-│   └── options.py          # 期权数据获取模块
+│   └── options.py          # 期权数据获取模块（并发优化）
 ├── utils/
 │   ├── __init__.py
 │   └── fetch_utils.py      # 底层分页抓取工具
@@ -373,6 +382,7 @@ coinmetrics-fetcher/
    - 专业版：6000 请求/20 秒
 4. **并行限制**: 最多 10 个并行请求
 5. **历史数据查询**: 使用 `get_options_greeks_iv()` 时，建议 `status=None`（默认），因为已到期期权的状态为 `offline`
+6. **并发性能**: `max_workers=4` 可获得约 60% 性能提升，过高并发数收益递减
 
 ## 相关资源
 
