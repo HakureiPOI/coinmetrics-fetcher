@@ -171,22 +171,52 @@ df = api.get_market_implied_volatility(
 
 ### Funding Rates API（永续合约资金费率）
 
-#### 1. 获取资金费率数据
+#### 1. 获取资金费率数据（完整时间序列）
 
 ```python
 from api import FundingRateFetcher
 
 fetcher = FundingRateFetcher()
 
-# 获取 Deribit BTC 永续合约资金费率
+# 获取 Deribit BTC 永续合约资金费率（完整时间序列，包含 NaN）
 df = fetcher.get_funding_rates(
     exchange="deribit",
     base="btc",
     start_time="2024-01-01",
     end_time="2024-01-31",
 )
+```
 
-# 获取预计资金费率
+#### 2. 获取资金费率数据（干净版，推荐）
+
+```python
+from api import FundingRateFetcher
+
+fetcher = FundingRateFetcher()
+
+# 获取干净的资金费率数据（自动过滤 NaN，仅包含有效记录）
+df = fetcher.get_funding_rates_clean(
+    exchange="deribit",
+    base="btc",
+    start_time="2024-01-01",
+    end_time="2024-01-31",
+    dropna=True,  # 默认过滤 NaN
+)
+
+# 数据特点:
+# - 资金费率每小时更新一次
+# - 无 NaN 值，数据连续
+# - 适合只需要实际资金费率数据的场景
+```
+
+#### 3. 获取预计资金费率
+
+```python
+from api import FundingRateFetcher
+
+fetcher = FundingRateFetcher()
+
+# 获取预计资金费率（每分钟更新）
 df = fetcher.get_predicted_funding_rates(
     exchange="deribit",
     base="btc",
@@ -195,7 +225,7 @@ df = fetcher.get_predicted_funding_rates(
 )
 ```
 
-#### 2. 同时获取资金费率 + 预计资金费率
+#### 4. 同时获取资金费率 + 预计资金费率
 
 ```python
 from api import FundingRateFetcher
@@ -208,7 +238,7 @@ df = fetcher.get_all_funding_rates(
     base="btc",
     start_time="2024-01-01",
     end_time="2024-01-31",
-    
+
     # 并发控制
     batch_size=50,        # 每批请求的市场数量
     max_workers=4,        # 最大并发数
@@ -227,7 +257,7 @@ df = fetcher.get_all_funding_rates(
 # - interval: 计息间隔
 ```
 
-#### 3. 便捷函数
+#### 5. 便捷函数
 
 ```python
 from api import get_funding_rates
