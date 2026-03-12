@@ -212,14 +212,17 @@ class OptionsDataFetcher:
         Returns:
             (markets, metadata) - 市场列表和元数据 DataFrame
         """
-        # 获取原始市场列表
+        # 获取原始市场列表（注意：API 不支持 status 参数，需要后续过滤）
         df = self.ref_api.get_markets(
             exchange=exchange,
             market_type="option",
             base=base,
-            status=status,
             verbose=False,
         )
+
+        # 过滤 status
+        if status:
+            df = df[df["status"] == status]
 
         # 过滤 Call/Put
         if option_type:
