@@ -191,6 +191,125 @@ class FundingRateFetcher:
             return pd.concat(all_dfs, ignore_index=True)
         return pd.DataFrame()
 
+    def get_funding_rates_clean(
+        self,
+        exchange: str,
+        base: str,
+        start_time: str,
+        end_time: str,
+        batch_size: int = 50,
+        max_workers: int = 4,
+        dropna: bool = True,
+        verbose: bool = True,
+    ) -> pd.DataFrame:
+        """
+        获取永续合约资金费率数据（干净版本，仅包含实际资金费率记录）
+
+        与 get_funding_rates() 的区别：
+        - 默认 dropna=True，过滤掉 NaN 记录
+        - 返回的数据仅包含实际资金费率更新的时间点（每 8 小时）
+        - 适合只需要实际资金费率数据的场景
+
+        Args:
+            exchange: 交易所名称 (如 deribit, binance)
+            base: 基础资产 (如 btc, eth)
+            start_time: 开始时间 (ISO 8601)
+            end_time: 结束时间 (ISO 8601)
+            batch_size: 每批请求的市场数量
+            max_workers: 最大并发数，默认 4
+            dropna: 是否过滤 NaN 记录，默认 True
+            verbose: 是否打印进度
+
+        Returns:
+            资金费率数据 DataFrame（仅包含有效记录）
+
+        Example:
+            >>> fetcher = FundingRateFetcher()
+            >>> # 获取干净的资金费率数据（每 8 小时一条）
+            >>> df = fetcher.get_funding_rates_clean(
+            ...     exchange="deribit",
+            ...     base="btc",
+            ...     start_time="2024-01-01",
+            ...     end_time="2024-01-31",
+            ... )
+            >>> # 每天 3 条数据（00:00, 08:00, 16:00 UTC）
+        """
+        if verbose:
+            logger.info("=" * 60)
+            logger.info(f"获取 {exchange.upper()} {base.upper()} 永续合约资金费率（干净版）")
+            logger.info("=" * 60)
+            logger.info(f"时间范围：{start_time} 至 {end_time}")
+            logger.info(f"过滤 NaN: {dropna}")
+
+        # 步骤 1: 获取永续合约市场列表
+        if verbose:
+            logger.info("步骤 1/3: 获取永续合约市场列表...")
+
+        markets = self._fetch_perpetual_markets(exchange, base)
+
+        if verbose:
+            logger.info(f"  找到 {len(markets)} 个永续合约")
+
+        if not markets:
+            if verbose:
+                logger.warning("没有找到符合条件的永续合约")
+            return pd.DataFrame()
+
+        # 步骤 2: 获取资金费率数据
+        if verbose:
+            logger.info("步骤 2/3: 获取资金费率数据...")
+
+        funding_df = self._fetch_all_concurrent(
+            markets,
+            start_time,
+            end_time,
+            batch_size,
+            max_workers,
+            self._fetch_funding_rates_batch,
+            "资金费率",
+            verbose,
+        )
+
+        # 过滤 NaN 记录
+        if dropna and len(funding_df) > 0:
+            before_count = len(funding_df)
+            funding_df = funding_df.dropna(subset=["rate"])
+            after_count = len(funding_df)
+            if verbose:
+                logger.info(f"  过滤 NaN: {before_count} -> {after_count} 条")
+
+        if verbose:
+            logger.info(f"  获取到 {len(funding_df)} 条资金费率记录")
+
+        # 步骤 3: 添加市场元数据
+        if verbose:
+            logger.info("步骤 3/3: 添加市场元数据...")
+
+        if len(funding_df) > 0:
+            # 获取市场元数据
+            ref_df = self.ref_api.get_markets(
+                exchange=exchange,
+                market_type="future",
+                base=base,
+                verbose=False,
+            )
+
+            # 合并元数据
+            result = pd.merge(
+                funding_df,
+                ref_df[["market", "symbol", "pair"]],
+                on="market",
+                how="left",
+            )
+        else:
+            result = funding_df
+
+        if verbose:
+            logger.info(f"  最终数据：{len(result)} 条记录")
+            logger.info("完成!")
+
+        return result
+
     def get_funding_rates(
         self,
         exchange: str,
