@@ -144,7 +144,7 @@ fetcher = FuturesDataFetcher()
 df = fetcher.get_candles(exchange="deribit", base="btc", start_time="2024-01-01", end_time="2024-01-02")
 
 # 指定频率
-df = fetcher.get_candles(exchange="deribit", base="btc", start_time="2024-01-01", end_time="2024-01-02", granularity="1h")
+df = fetcher.get_candles(exchange="deribit", base="btc", start_time="2024-01-01", end_time="2024-01-02", frequency="1h")
 ```
 
 ### 现货 K 线
@@ -158,8 +158,10 @@ fetcher = SpotDataFetcher()
 df = fetcher.get_candles(exchange="binance", base="btc", start_time="2024-01-01", end_time="2024-01-02")
 
 # 指定计价货币和频率
-df = fetcher.get_candles(exchange="binance", base="btc", quote="usdt", start_time="2024-01-01", end_time="2024-01-02", granularity="1h")
+df = fetcher.get_candles(exchange="binance", base="btc", quote="usdt", start_time="2024-01-01", end_time="2024-01-02", frequency="1h")
 ```
+
+**K 线频率支持**: `1m`, `5m`, `10m`, `15m`, `30m`, `1h`, `4h`, `1d`
 
 ## 上下文管理器
 

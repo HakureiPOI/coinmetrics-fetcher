@@ -23,12 +23,12 @@ class SpotDataFetcher(BaseFetcher):
         )
         return df["market"].tolist()
 
-    def _fetch_candles_batch(self, markets: list[str], start_time: str, end_time: str, granularity: str) -> pd.DataFrame:
+    def _fetch_candles_batch(self, markets: list[str], start_time: str, end_time: str, frequency: str) -> pd.DataFrame:
         """批量获取 K 线数据"""
         return self.ts_api.get_market_candles(
             markets=",".join(markets),
             start_time=start_time, end_time=end_time,
-            granularity=granularity,
+            frequency=frequency,
             page_size=10000, verbose=False,
         )
 
@@ -45,7 +45,7 @@ class SpotDataFetcher(BaseFetcher):
         start_time: str,
         end_time: str,
         quote: Optional[str] = None,
-        granularity: str = "1m",
+        frequency: str = "1m",
         batch_size: int = 50,
         max_workers: int = 4,
         verbose: bool = True,
@@ -59,7 +59,7 @@ class SpotDataFetcher(BaseFetcher):
             start_time: 开始时间 (ISO 8601)
             end_time: 结束时间 (ISO 8601)
             quote: 计价货币 (如 usd, usdt)，None 表示全部
-            granularity: 数据粒度 (1m/5m/15m/30m/1h/4h/1d)，默认 1m
+            frequency: K 线频率 (1m/5m/10m/15m/30m/1h/4h/1d)，默认 1m
             batch_size: 每批请求的市场数量
             max_workers: 最大并发数
             verbose: 是否打印进度
@@ -69,20 +69,20 @@ class SpotDataFetcher(BaseFetcher):
         """
         validate_time_range(start_time, end_time)
 
-        valid_granularities = {"1m", "5m", "15m", "30m", "1h", "4h", "1d"}
-        if granularity not in valid_granularities:
-            raise ValidationError(f"granularity 必须是 {valid_granularities} 之一")
+        valid_frequencies = {"1m", "5m", "10m", "15m", "30m", "1h", "4h", "1d"}
+        if frequency not in valid_frequencies:
+            raise ValidationError(f"frequency 必须是 {valid_frequencies} 之一")
 
         markets = self._fetch_spot_markets(exchange, base, quote)
         if verbose:
-            logger.info(f"[现货K线] {exchange.upper()} {base.upper()} | {len(markets)} 个市场 | {granularity}")
+            logger.info(f"[现货K线] {exchange.upper()} {base.upper()} | {len(markets)} 个市场 | {frequency}")
 
         if not markets:
             return pd.DataFrame()
 
         df = self._fetch_all_concurrent(
             markets, start_time, end_time, batch_size, max_workers,
-            self._fetch_candles_batch, "K线", verbose, granularity=granularity
+            self._fetch_candles_batch, "K线", verbose, frequency=frequency
         )
 
         if len(df) > 0:

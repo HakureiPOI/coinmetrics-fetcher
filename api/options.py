@@ -141,7 +141,7 @@ class OptionsDataFetcher(BaseFetcher):
         """获取期权 Greeks 和 IV 数据"""
         validate_time_range(start_time, end_time)
 
-        valid_granularities = {"1m", "5m", "15m", "30m", "1h", "4h", "1d"}
+        valid_granularities = {"raw", "1m", "1h", "1d"}
         if granularity not in valid_granularities:
             raise ValidationError(f"granularity 必须是 {valid_granularities} 之一")
 
