@@ -315,5 +315,58 @@ def fetch_all_pages(
             session.close()
 
     if return_dataframe:
-        return pd.DataFrame(rows) if rows else pd.DataFrame()
+        df = pd.DataFrame(rows) if rows else pd.DataFrame()
+        if not df.empty:
+            df = _convert_dtypes(df)
+        return df
     return rows
+
+
+def _convert_dtypes(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    自动转换 DataFrame 列类型
+    
+    - 数值列 -> float64
+    - 时间列 -> datetime64
+    - 布尔列 -> bool
+    
+    Args:
+        df: 原始 DataFrame
+        
+    Returns:
+        类型转换后的 DataFrame
+    """
+    # 时间列关键词
+    time_keywords = {'time', 'date', 'timestamp', 'expiration', 'listing'}
+    
+    # 布尔列关键词
+    bool_keywords = {'is_', 'has_', 'enabled', 'active'}
+    
+    for col in df.columns:
+        if df[col].dtype == 'object':
+            col_lower = col.lower()
+            
+            # 时间列
+            if any(kw in col_lower for kw in time_keywords):
+                try:
+                    df[col] = pd.to_datetime(df[col], errors='ignore')
+                except Exception:
+                    pass
+            # 布尔列
+            elif any(kw in col_lower for kw in bool_keywords):
+                try:
+                    df[col] = df[col].astype(bool)
+                except Exception:
+                    pass
+            # 尝试转换为数值
+            else:
+                try:
+                    # 检查是否可以转换为数值
+                    sample = df[col].dropna().head(100)
+                    if len(sample) > 0:
+                        pd.to_numeric(sample, errors='raise')
+                        df[col] = pd.to_numeric(df[col], errors='coerce')
+                except (ValueError, TypeError):
+                    pass
+    
+    return df
