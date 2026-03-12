@@ -389,3 +389,79 @@ class TimeseriesAPI(CoinMetricsAPI):
             page_size=page_size,
             verbose=verbose,
         )
+
+    def get_market_greeks(
+        self,
+        markets: str,
+        start_time: Optional[str] = None,
+        end_time: Optional[str] = None,
+        granularity: Optional[str] = None,
+        page_size: Optional[int] = None,
+        verbose: bool = True,
+    ) -> pd.DataFrame:
+        """
+        获取期权 Greeks 数据
+
+        Args:
+            markets: 市场标识符，逗号分隔多个
+            start_time: 开始时间
+            end_time: 结束时间
+            granularity: 数据粒度 (如 1m, 1h, 1d)
+            page_size: 每页大小
+            verbose: 是否打印进度
+
+        Returns:
+            Greeks 数据 DataFrame，包含 delta, gamma, theta, vega, rho 等字段
+        """
+        params = {"markets": markets}
+        if start_time:
+            params["start_time"] = start_time
+        if end_time:
+            params["end_time"] = end_time
+        if granularity:
+            params["granularity"] = granularity
+
+        return self._request(
+            endpoint="/timeseries/market-greeks",
+            params=params,
+            page_size=page_size,
+            verbose=verbose,
+        )
+
+    def get_market_implied_volatility(
+        self,
+        markets: str,
+        start_time: Optional[str] = None,
+        end_time: Optional[str] = None,
+        granularity: Optional[str] = None,
+        page_size: Optional[int] = None,
+        verbose: bool = True,
+    ) -> pd.DataFrame:
+        """
+        获取期权隐含波动率 (IV) 数据
+
+        Args:
+            markets: 市场标识符，逗号分隔多个
+            start_time: 开始时间
+            end_time: 结束时间
+            granularity: 数据粒度 (如 1m, 1h, 1d)
+            page_size: 每页大小
+            verbose: 是否打印进度
+
+        Returns:
+            IV 数据 DataFrame，包含 iv_mark, iv_trade, iv_bid, iv_ask 等字段
+        """
+        params = {"markets": markets}
+        if start_time:
+            params["start_time"] = start_time
+        if end_time:
+            params["end_time"] = end_time
+        if granularity:
+            params["granularity"] = granularity
+
+        return self._request(
+            endpoint="/timeseries/market-implied-volatility",
+            params=params,
+            page_size=page_size,
+            verbose=verbose,
+        )

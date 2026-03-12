@@ -85,6 +85,7 @@ class ReferenceDataAPI(CoinMetricsAPI):
         quote: Optional[str] = None,
         asset: Optional[str] = None,
         symbol: Optional[str] = None,
+        status: Optional[str] = None,
         page_size: Optional[int] = None,
         verbose: bool = True,
     ) -> pd.DataFrame:
@@ -98,6 +99,7 @@ class ReferenceDataAPI(CoinMetricsAPI):
             quote: 计价货币
             asset: 任意一方资产
             symbol: 交易对符号
+            status: 状态 (online/offline)
             page_size: 每页大小
             verbose: 是否打印进度
 
@@ -117,6 +119,8 @@ class ReferenceDataAPI(CoinMetricsAPI):
             params["asset"] = asset
         if symbol:
             params["symbol"] = symbol
+        if status:
+            params["status"] = status
 
         return self._request(
             endpoint="/reference-data/markets",
