@@ -9,7 +9,8 @@ CoinMetrics API v4 Python 客户端
     ├── fetchers/       # 二级接口 - 基于一级接口的高级封装
     │   ├── options.py          # 期权数据获取器
     │   ├── funding_rates.py    # 资金费率获取器
-    │   └── futures.py          # 期货数据获取器
+    │   ├── futures.py          # 期货数据获取器
+    │   └── spot.py             # 现货数据获取器
     ├── base.py         # API 基类
     └── base_fetcher.py # 数据获取器基类
 """
@@ -17,7 +18,7 @@ CoinMetrics API v4 Python 客户端
 from .base import CoinMetricsAPI
 from .base_fetcher import BaseFetcher
 from .core import ReferenceDataAPI, TimeseriesAPI
-from .fetchers import OptionsDataFetcher, OptionFilter, FundingRateFetcher, FuturesDataFetcher
+from .fetchers import OptionsDataFetcher, OptionFilter, FundingRateFetcher, FuturesDataFetcher, SpotDataFetcher
 
 __all__ = [
     # 基础类
@@ -31,4 +32,5 @@ __all__ = [
     "OptionFilter",
     "FundingRateFetcher",
     "FuturesDataFetcher",
+    "SpotDataFetcher",
 ]

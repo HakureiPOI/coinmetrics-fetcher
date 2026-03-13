@@ -78,6 +78,7 @@ df.head()
 | options | OptionsDataFetcher | 二级 | 期权 Greeks 和隐含波动率 (IV) |
 | funding_rates | FundingRateFetcher | 二级 | 永续合约资金费率（实际/预计） |
 | futures | FuturesDataFetcher | 二级 | 期货 K 线数据 |
+| spot | SpotDataFetcher | 二级 | 现货 K 线数据 |
 
 ## 支持的 API 端点
 
@@ -171,6 +172,26 @@ futures = FuturesDataFetcher()
 df = futures.get_candles(
     exchange="deribit",
     base="btc",
+    start_time="2024-01-01",
+    end_time="2024-01-02",
+    frequency="1h"
+)
+
+# 现货 K 线
+spot = SpotDataFetcher()
+df = spot.get_candles(
+    exchange="binance",
+    base="btc",
+    start_time="2024-01-01",
+    end_time="2024-01-02",
+    frequency="1h"
+)
+
+# 现货 K 线（指定计价货币）
+df = spot.get_candles(
+    exchange="binance",
+    base="btc",
+    quote="usdt",  # 只获取 BTC/USDT 交易对
     start_time="2024-01-01",
     end_time="2024-01-02",
     frequency="1h"
@@ -346,7 +367,8 @@ coinmetrics-fetcher/
 │       ├── __init__.py
 │       ├── options.py          # 期权数据获取器
 │       ├── funding_rates.py    # 资金费率获取器
-│       └── futures.py          # 期货数据获取器
+│       ├── futures.py          # 期货数据获取器
+│       └── spot.py             # 现货数据获取器
 └── utils/
     ├── __init__.py
     ├── fetch_utils.py      # 工具函数和异常类
