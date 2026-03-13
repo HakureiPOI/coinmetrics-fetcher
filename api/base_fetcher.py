@@ -105,7 +105,7 @@ class BaseFetcher:
                 batch_num = futures[future]
                 try:
                     df = future.result()
-                    if len(df) > 0:
+                    if not df.empty:
                         all_dfs.append(df)
                     if verbose:
                         logger.info(f"[{data_type}] {batch_num}/{total_batches}")

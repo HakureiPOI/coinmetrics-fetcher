@@ -125,6 +125,9 @@ class ReferenceDataAPI(CoinMetricsAPI):
         fetch_func,
     ) -> Any:
         """带缓存的请求"""
-        return self.cache.get(endpoint, params) or (
-            lambda data: (self.cache.set(endpoint, params, data, self.cache_ttl), data)[1]
-        )(fetch_func())
+        cached = self.cache.get(endpoint, params)
+        if cached is not None:
+            return cached
+        data = fetch_func()
+        self.cache.set(endpoint, params, data, self.cache_ttl)
+        return data
