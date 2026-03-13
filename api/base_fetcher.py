@@ -77,7 +77,7 @@ class BaseFetcher:
         **kwargs,
     ) -> pd.DataFrame:
         """并发获取所有数据
-        
+
         Args:
             markets: 市场列表
             start_time: 开始时间
@@ -88,10 +88,15 @@ class BaseFetcher:
             data_type: 数据类型标识（用于日志）
             verbose: 是否打印进度
             **kwargs: 额外参数传递给 fetch_func（如 frequency, granularity）
+
+        Returns:
+            合并后的 DataFrame
         """
         all_dfs = []
         total_batches = (len(markets) + batch_size - 1) // batch_size
         errors: list[tuple[int, Exception]] = []
+        successful_batches = 0
+        total_rows = 0
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = {}
@@ -107,28 +112,36 @@ class BaseFetcher:
                     df = future.result()
                     if not df.empty:
                         all_dfs.append(df)
+                        successful_batches += 1
+                        total_rows += len(df)
                     if verbose:
-                        logger.info(f"[{data_type}] {batch_num}/{total_batches}")
+                        logger.info(f"[{data_type}] {batch_num:2d}/{total_batches} | 累计 {total_rows:6d} 条")
                 except Exception as e:
-                    logger.error(f"[{data_type}] 批次 {batch_num} 失败：{e}")
+                    logger.error(f"[{data_type}] 批次 {batch_num:2d} 失败：{e}")
                     errors.append((batch_num, e))
 
         if errors:
             raise BatchFetchError(errors)
 
         if all_dfs:
-            return pd.concat(all_dfs, ignore_index=True)
+            result = pd.concat(all_dfs, ignore_index=True)
+            if verbose:
+                logger.info(f"[{data_type}] 完成：{successful_batches}/{total_batches} 批次，共 {len(result)} 条")
+            return result
+
+        if verbose:
+            logger.warning(f"[{data_type}] 未获取到数据")
         return pd.DataFrame()
 
     def _fetch_markets(self, exchange: str, base: str, market_type: str, verbose: bool = False) -> list[str]:
         """获取市场列表
-        
+
         Args:
             exchange: 交易所名称
             base: 基础资产
-            market_type: 市场类型 (future/option)
+            market_type: 市场类型 (future/option/spot)
             verbose: 是否打印日志
-            
+
         Returns:
             市场标识符列表
         """
@@ -139,12 +152,12 @@ class BaseFetcher:
 
     def _get_market_metadata(self, exchange: str, base: str, market_type: str) -> pd.DataFrame:
         """获取市场元数据
-        
+
         Args:
             exchange: 交易所名称
             base: 基础资产
-            market_type: 市场类型 (future/option)
-            
+            market_type: 市场类型 (future/option/spot)
+
         Returns:
             包含 market, symbol, pair 的 DataFrame
         """
@@ -153,7 +166,19 @@ class BaseFetcher:
         )[["market", "symbol", "pair"]]
 
     def save_to_csv(self, df: pd.DataFrame, output_path: str, overwrite: bool = True) -> str:
-        """保存 DataFrame 到 CSV 文件"""
+        """保存 DataFrame 到 CSV 文件
+
+        Args:
+            df: 要保存的 DataFrame
+            output_path: 输出文件路径
+            overwrite: 是否覆盖已存在的文件
+
+        Returns:
+            保存的文件路径
+
+        Raises:
+            FileExistsError: 文件已存在且 overwrite=False
+        """
         output_dir = os.path.dirname(output_path)
         if output_dir:
             os.makedirs(output_dir, exist_ok=True)
@@ -167,8 +192,10 @@ class BaseFetcher:
 
     def close(self) -> None:
         """关闭底层 API Sessions"""
-        self.ref_api.close()
-        self.ts_api.close()
+        if self.ref_api:
+            self.ref_api.close()
+        if self.ts_api:
+            self.ts_api.close()
 
     def __enter__(self) -> "BaseFetcher":
         return self
