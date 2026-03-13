@@ -130,11 +130,23 @@ class OptionsDataFetcher(BaseFetcher):
             self._fetch_iv_batch, "IV", verbose, granularity=granularity
         )
 
-        # 合并
+        # 合并 Greeks 和 IV 数据
         if greeks_df.empty and iv_df.empty:
             return pd.DataFrame()
-        merged = greeks_df if iv_df.empty else iv_df if greeks_df.empty else pd.merge(greeks_df, iv_df, on=["market", "time"], how="outer")
+        if greeks_df.empty:
+            merged = iv_df
+        elif iv_df.empty:
+            merged = greeks_df
+        else:
+            # 使用 suffixes 参数明确指定列名来源
+            merged = pd.merge(
+                greeks_df, iv_df,
+                on=["market", "time"],
+                how="outer",
+                suffixes=("_greeks", "_iv")
+            )
 
+        # 合并元数据
         if not merged.empty:
             merged = pd.merge(merged, metadata, on="market", how="left")
             merged = merged.sort_values(["market", "time"]).reset_index(drop=True)
