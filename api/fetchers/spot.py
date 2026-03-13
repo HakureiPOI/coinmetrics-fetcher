@@ -74,8 +74,10 @@ class SpotDataFetcher(BaseFetcher):
             self._fetch_candles_batch, "现货 K 线", verbose, frequency=frequency
         )
 
-        if len(df) > 0:
-            df = pd.merge(df, self._get_market_metadata(exchange, base, "spot"), on="market", how="left")
+        if not df.empty:
+            metadata = self._get_market_metadata(exchange, base, "spot")
+            if not metadata.empty:
+                df = pd.merge(df, metadata, on="market", how="left")
             df = df.sort_values(["market", "time"]).reset_index(drop=True)
 
         if verbose:

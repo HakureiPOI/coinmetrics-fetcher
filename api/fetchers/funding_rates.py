@@ -65,8 +65,10 @@ class FundingRateFetcher(BaseFetcher):
             self._fetch_funding_rates_batch, "资金费率", verbose
         )
 
-        if len(df) > 0:
-            df = pd.merge(df, self._get_market_metadata(exchange, base, "future"), on="market", how="left")
+        if not df.empty:
+            metadata = self._get_market_metadata(exchange, base, "future")
+            if not metadata.empty:
+                df = pd.merge(df, metadata, on="market", how="left")
             df = df.sort_values(["market", "time"]).reset_index(drop=True)
 
         if verbose:
@@ -98,8 +100,10 @@ class FundingRateFetcher(BaseFetcher):
             self._fetch_predicted_rates_batch, "预计资金费率", verbose
         )
 
-        if len(df) > 0:
-            df = pd.merge(df, self._get_market_metadata(exchange, base, "future"), on="market", how="left")
+        if not df.empty:
+            metadata = self._get_market_metadata(exchange, base, "future")
+            if not metadata.empty:
+                df = pd.merge(df, metadata, on="market", how="left")
             df = df.sort_values(["market", "time"]).reset_index(drop=True)
 
         if verbose:
