@@ -366,11 +366,11 @@ coinmetrics-fetcher/
 ## ⚠️ 注意事项
 
 1. **API 密钥**: 专业版需在 [CoinMetrics](https://coinmetrics.io/) 申请
-2. **速率限制**: 
+2. **速率限制**:
    - 社区版：10 请求/6 秒
    - 专业版：6000 请求/20 秒
 3. **并发建议**: `max_workers=4` 为佳，过高收益递减
-4. **数据范围**: 社区版部分数据可能不可用
+4. **社区版限制**: 社区版 API 仅支持参考数据端点（如 `/reference-data/markets`），时间序列端点（K 线、Greeks、IV、资金费率）需要专业版 API
 
 ## 🔗 相关资源
 
