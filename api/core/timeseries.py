@@ -65,8 +65,8 @@ class TimeseriesAPI(CachedCoinMetricsAPI):
 
         Args:
             markets: 市场标识符，逗号分隔多个
-            start_time: 开始时间
-            end_time: 结束时间
+            start_time: 开始时间（包含）
+            end_time: 结束时间（不包含，左闭右开）
             frequency: K 线频率 (1m, 5m, 10m, 15m, 30m, 1h, 4h, 1d)
             page_size: 每页大小
             verbose: 是否打印进度
@@ -75,7 +75,10 @@ class TimeseriesAPI(CachedCoinMetricsAPI):
         Returns:
             K 线数据 DataFrame
         """
-        params = self._build_params(markets=markets, start_time=start_time, end_time=end_time, frequency=frequency, page_size=page_size)
+        params = self._build_params(
+            markets=markets, start_time=start_time, end_time=end_time,
+            frequency=frequency, page_size=page_size, end_inclusive=False
+        )
 
         def fetch() -> pd.DataFrame:
             return self._request(
@@ -102,8 +105,8 @@ class TimeseriesAPI(CachedCoinMetricsAPI):
 
         Args:
             markets: 市场标识符，逗号分隔多个
-            start_time: 开始时间
-            end_time: 结束时间
+            start_time: 开始时间（包含）
+            end_time: 结束时间（不包含，左闭右开）
             granularity: 数据粒度 (如 1m, 1h, 1d)
             page_size: 每页大小
             verbose: 是否打印进度
@@ -112,7 +115,10 @@ class TimeseriesAPI(CachedCoinMetricsAPI):
         Returns:
             Greeks 数据 DataFrame
         """
-        params = self._build_params(markets=markets, start_time=start_time, end_time=end_time, granularity=granularity, page_size=page_size)
+        params = self._build_params(
+            markets=markets, start_time=start_time, end_time=end_time,
+            granularity=granularity, page_size=page_size, end_inclusive=False
+        )
 
         def fetch() -> pd.DataFrame:
             return self._request(
@@ -139,8 +145,8 @@ class TimeseriesAPI(CachedCoinMetricsAPI):
 
         Args:
             markets: 市场标识符，逗号分隔多个
-            start_time: 开始时间
-            end_time: 结束时间
+            start_time: 开始时间（包含）
+            end_time: 结束时间（不包含，左闭右开）
             granularity: 数据粒度 (如 1m, 1h, 1d)
             page_size: 每页大小
             verbose: 是否打印进度
@@ -149,7 +155,10 @@ class TimeseriesAPI(CachedCoinMetricsAPI):
         Returns:
             IV 数据 DataFrame
         """
-        params = self._build_params(markets=markets, start_time=start_time, end_time=end_time, granularity=granularity, page_size=page_size)
+        params = self._build_params(
+            markets=markets, start_time=start_time, end_time=end_time,
+            granularity=granularity, page_size=page_size, end_inclusive=False
+        )
 
         def fetch() -> pd.DataFrame:
             return self._request(
@@ -175,8 +184,8 @@ class TimeseriesAPI(CachedCoinMetricsAPI):
 
         Args:
             markets: 市场标识符，逗号分隔多个
-            start_time: 开始时间
-            end_time: 结束时间
+            start_time: 开始时间（包含）
+            end_time: 结束时间（不包含，左闭右开）
             page_size: 每页大小
             verbose: 是否打印进度
             use_cache: 是否使用缓存，None 表示使用实例默认值
@@ -184,7 +193,10 @@ class TimeseriesAPI(CachedCoinMetricsAPI):
         Returns:
             资金费率数据 DataFrame
         """
-        params = self._build_params(markets=markets, start_time=start_time, end_time=end_time, page_size=page_size)
+        params = self._build_params(
+            markets=markets, start_time=start_time, end_time=end_time,
+            page_size=page_size, end_inclusive=False
+        )
 
         def fetch() -> pd.DataFrame:
             return self._request(
@@ -210,8 +222,8 @@ class TimeseriesAPI(CachedCoinMetricsAPI):
 
         Args:
             markets: 市场标识符，逗号分隔多个
-            start_time: 开始时间
-            end_time: 结束时间
+            start_time: 开始时间（包含）
+            end_time: 结束时间（不包含，左闭右开）
             page_size: 每页大小
             verbose: 是否打印进度
             use_cache: 是否使用缓存，None 表示使用实例默认值
@@ -219,7 +231,10 @@ class TimeseriesAPI(CachedCoinMetricsAPI):
         Returns:
             预计资金费率数据 DataFrame
         """
-        params = self._build_params(markets=markets, start_time=start_time, end_time=end_time, page_size=page_size)
+        params = self._build_params(
+            markets=markets, start_time=start_time, end_time=end_time,
+            page_size=page_size, end_inclusive=False
+        )
 
         def fetch() -> pd.DataFrame:
             return self._request(
