@@ -16,13 +16,6 @@ logger = logging.getLogger(__name__)
 class FuturesDataFetcher(BaseFetcher):
     """期货数据获取器"""
 
-    def _fetch_futures_markets(self, exchange: str, base: str) -> list[str]:
-        """获取所有期货市场列表（包括永续和交割）"""
-        df = self.ref_api.get_markets(
-            exchange=exchange, type="future", base=base, verbose=False
-        )
-        return df["market"].tolist()
-
     def _fetch_candles_batch(self, markets: list[str], start_time: str, end_time: str, frequency: str) -> pd.DataFrame:
         """批量获取 K 线数据"""
         return self.ts_api.get_market_candles(
@@ -31,12 +24,6 @@ class FuturesDataFetcher(BaseFetcher):
             frequency=frequency,
             page_size=10000, verbose=False,
         )
-
-    def _get_market_metadata(self, exchange: str, base: str) -> pd.DataFrame:
-        """获取市场元数据"""
-        return self.ref_api.get_markets(
-            exchange=exchange, type="future", base=base, verbose=False
-        )[["market", "symbol", "pair"]]
 
     def get_candles(
         self,
@@ -71,22 +58,22 @@ class FuturesDataFetcher(BaseFetcher):
         if frequency not in valid_frequencies:
             raise ValidationError(f"frequency 必须是 {valid_frequencies} 之一")
 
-        markets = self._fetch_futures_markets(exchange, base)
+        markets = self._fetch_markets(exchange, base, "future", verbose=False)
         if verbose:
-            logger.info(f"[K线] {exchange.upper()} {base.upper()} | {len(markets)} 个市场 | {frequency}")
+            logger.info(f"[K 线] {exchange.upper()} {base.upper()} | {len(markets)} 个市场 | {frequency}")
 
         if not markets:
             return pd.DataFrame()
 
         df = self._fetch_all_concurrent(
             markets, start_time, end_time, batch_size, max_workers,
-            self._fetch_candles_batch, "K线", verbose, frequency=frequency
+            self._fetch_candles_batch, "K 线", verbose, frequency=frequency
         )
 
         if len(df) > 0:
-            df = pd.merge(df, self._get_market_metadata(exchange, base), on="market", how="left")
+            df = pd.merge(df, self._get_market_metadata(exchange, base, "future"), on="market", how="left")
             df = df.sort_values(["market", "time"]).reset_index(drop=True)
 
         if verbose:
-            logger.info(f"[K线] 完成: {len(df)} 条")
+            logger.info(f"[K 线] 完成：{len(df)} 条")
         return df

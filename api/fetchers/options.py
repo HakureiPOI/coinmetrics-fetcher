@@ -40,7 +40,7 @@ class OptionsDataFetcher(BaseFetcher):
             df = df[df["option_contract_type"] == filter.option_type]
         if filter.status:
             df = df[df["status"] == filter.status]
-        
+
         # 按到期日和行权价排序
         if len(df) > 0 and "expiration" in df.columns and "strike" in df.columns:
             df = df.sort_values(["expiration", "strike"]).reset_index(drop=True)
@@ -54,7 +54,7 @@ class OptionsDataFetcher(BaseFetcher):
         """获取 Deribit ETH 期权列表"""
         return self.get_options(OptionFilter("deribit", "eth", quote=quote, option_type=option_type, status=status), page_size, verbose)
 
-    def _fetch_option_markets(self, exchange: str, base: str, option_type, status, start_time: str, end_time: str) -> tuple[list[str], pd.DataFrame]:
+    def _fetch_option_markets(self, exchange: str, base: str, option_type: Optional[str], status: Optional[str], start_time: str, end_time: str) -> tuple[list[str], pd.DataFrame]:
         """获取符合条件的期权市场列表"""
         df = self.ref_api.get_markets(exchange=exchange, type="option", base=base, verbose=False)
 
@@ -92,39 +92,6 @@ class OptionsDataFetcher(BaseFetcher):
             granularity=granularity, page_size=10000, verbose=False,
         )
 
-    def _fetch_all_with_granularity(self, markets, start_time, end_time, granularity, batch_size, max_workers, fetch_func, data_type, verbose=True) -> pd.DataFrame:
-        """并发获取数据（带 granularity 参数）"""
-        all_dfs = []
-        total_batches = (len(markets) + batch_size - 1) // batch_size
-        errors: list[tuple[int, Exception]] = []
-
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = {}
-            for i in range(0, len(markets), batch_size):
-                batch = markets[i : i + batch_size]
-                batch_num = i // batch_size + 1
-                future = executor.submit(fetch_func, batch, start_time, end_time, granularity)
-                futures[future] = batch_num
-
-            for future in as_completed(futures):
-                batch_num = futures[future]
-                try:
-                    df = future.result()
-                    if len(df) > 0:
-                        all_dfs.append(df)
-                    if verbose:
-                        logger.info(f"[{data_type}] {batch_num}/{total_batches}")
-                except Exception as e:
-                    logger.error(f"[{data_type}] 批次 {batch_num} 失败: {e}")
-                    errors.append((batch_num, e))
-
-        if errors:
-            raise BatchFetchError(errors)
-
-        if all_dfs:
-            return pd.concat(all_dfs, ignore_index=True)
-        return pd.DataFrame()
-
     def get_options_greeks_iv(
         self,
         exchange: str,
@@ -152,14 +119,15 @@ class OptionsDataFetcher(BaseFetcher):
         if not markets:
             return pd.DataFrame()
 
-        greeks_df = self._fetch_all_with_granularity(
-            markets, start_time, end_time, granularity, batch_size, max_workers,
-            self._fetch_greeks_batch, "Greeks", verbose
+        # 使用基类的并发方法
+        greeks_df = self._fetch_all_concurrent(
+            markets, start_time, end_time, batch_size, max_workers,
+            self._fetch_greeks_batch, "Greeks", verbose, granularity=granularity
         )
 
-        iv_df = self._fetch_all_with_granularity(
-            markets, start_time, end_time, granularity, batch_size, max_workers,
-            self._fetch_iv_batch, "IV", verbose
+        iv_df = self._fetch_all_concurrent(
+            markets, start_time, end_time, batch_size, max_workers,
+            self._fetch_iv_batch, "IV", verbose, granularity=granularity
         )
 
         # 合并
@@ -172,5 +140,5 @@ class OptionsDataFetcher(BaseFetcher):
             merged = merged.sort_values(["market", "time"]).reset_index(drop=True)
 
         if verbose:
-            logger.info(f"[Greeks/IV] 完成: {len(merged)} 条")
+            logger.info(f"[Greeks/IV] 完成：{len(merged)} 条")
         return merged
