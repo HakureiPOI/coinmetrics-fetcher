@@ -6,6 +6,13 @@ from .fetch_utils import (
     ValidationError,
     validate_time_range,
 )
+from .cache import (
+    MemoryCache,
+    CacheEntry,
+    get_cache,
+    init_cache,
+    cached_request,
+)
 
 __all__ = [
     "build_session",
@@ -14,4 +21,9 @@ __all__ = [
     "BatchFetchError",
     "ValidationError",
     "validate_time_range",
+    "MemoryCache",
+    "CacheEntry",
+    "get_cache",
+    "init_cache",
+    "cached_request",
 ]

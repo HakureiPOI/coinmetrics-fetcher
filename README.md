@@ -162,6 +162,56 @@ df = futures.get_candles(
 
 **K 线频率支持**: `1m`, `5m`, `10m`, `15m`, `30m`, `1h`, `4h`, `1d`
 
+## 内存缓存
+
+一级接口 (`ReferenceDataAPI`, `TimeseriesAPI`) 内置内存缓存功能，可减少重复 API 请求。
+
+```python
+from api import ReferenceDataAPI, TimeseriesAPI
+from utils import init_cache
+
+# 初始化全局缓存（可选）
+init_cache(default_ttl=300, max_size=1000)
+
+# 一级接口默认启用缓存
+ref = ReferenceDataAPI()  # 缓存 TTL 默认 3600 秒
+ts = TimeseriesAPI()      # 缓存 TTL 默认 300 秒
+
+# 禁用缓存
+ref = ReferenceDataAPI(use_cache=False)
+ts = TimeseriesAPI(use_cache=False)
+
+# 自定义缓存时间
+ref = ReferenceDataAPI(cache_ttl=7200)  # 2 小时
+ts = TimeseriesAPI(cache_ttl=600)       # 10 分钟
+
+# 单次请求禁用缓存
+df = ts.get_market_candles(..., use_cache=False)
+
+# 查看缓存统计
+cache = ref.cache
+print(cache.stats())  # {'size': 10, 'hits': 5, 'misses': 2, 'hit_rate': '71.43%'}
+
+# 清空缓存
+cache.clear()
+```
+
+**二级接口** (`FuturesDataFetcher`, `FundingRateFetcher`, `OptionsDataFetcher`) 会自动将缓存配置传递给底层 API：
+
+```python
+from api import FuturesDataFetcher
+
+# 启用缓存（默认）
+fetcher = FuturesDataFetcher(use_cache=True)
+
+# 自定义缓存时间
+fetcher = FuturesDataFetcher(
+    use_cache=True,
+    ref_cache_ttl=3600,   # 市场元数据缓存 1 小时
+    ts_cache_ttl=300,     # K 线数据缓存 5 分钟
+)
+```
+
 ## 上下文管理器
 
 ```python
@@ -221,7 +271,8 @@ coinmetrics-fetcher/
 │       └── futures.py          # 期货数据获取器
 └── utils/
     ├── __init__.py
-    └── fetch_utils.py      # 工具函数和异常类
+    ├── fetch_utils.py      # 工具函数和异常类
+    └── cache.py            # 内存缓存模块
 ```
 
 ## 注意事项

@@ -13,7 +13,7 @@ import pandas as pd
 
 from .core import ReferenceDataAPI, TimeseriesAPI
 from config import Config, get_config
-from utils import BatchFetchError
+from utils import BatchFetchError, MemoryCache
 
 logger = logging.getLogger(__name__)
 
@@ -21,10 +21,37 @@ logger = logging.getLogger(__name__)
 class BaseFetcher:
     """数据获取器基类"""
 
-    def __init__(self, config: Optional[Config] = None):
+    def __init__(
+        self,
+        config: Optional[Config] = None,
+        use_cache: bool = True,
+        cache: Optional[MemoryCache] = None,
+        ref_cache_ttl: int = 3600,
+        ts_cache_ttl: int = 300,
+    ):
+        """
+        初始化 BaseFetcher
+
+        Args:
+            config: 配置对象
+            use_cache: 是否启用缓存，默认 True
+            cache: 缓存实例，None 表示使用全局缓存
+            ref_cache_ttl: ReferenceDataAPI 缓存时间 (秒)，默认 3600
+            ts_cache_ttl: TimeseriesAPI 缓存时间 (秒)，默认 300
+        """
         self.config = config or get_config()
-        self.ref_api = ReferenceDataAPI(config=self.config)
-        self.ts_api = TimeseriesAPI(config=self.config)
+        self.ref_api = ReferenceDataAPI(
+            config=self.config,
+            use_cache=use_cache,
+            cache=cache,
+            cache_ttl=ref_cache_ttl,
+        )
+        self.ts_api = TimeseriesAPI(
+            config=self.config,
+            use_cache=use_cache,
+            cache=cache,
+            cache_ttl=ts_cache_ttl,
+        )
 
     def _fetch_all_concurrent(
         self,
