@@ -5,17 +5,16 @@ CoinMetrics Reference Data API 封装
 """
 
 import logging
-from typing import Any, Optional
+from typing import Optional
 
 import pandas as pd
 
-from ..base import CoinMetricsAPI
-from utils import get_cache, MemoryCache
+from ..cached_api import CachedCoinMetricsAPI
 
 logger = logging.getLogger(__name__)
 
 
-class ReferenceDataAPI(CoinMetricsAPI):
+class ReferenceDataAPI(CachedCoinMetricsAPI):
     """
     Reference Data API 封装
 
@@ -27,7 +26,7 @@ class ReferenceDataAPI(CoinMetricsAPI):
         config=None,
         session=None,
         use_cache: bool = True,
-        cache: Optional[MemoryCache] = None,
+        cache: Optional[dict] = None,
         cache_ttl: int = 3600,
         use_community_api: bool = False,
     ):
@@ -42,20 +41,14 @@ class ReferenceDataAPI(CoinMetricsAPI):
             cache_ttl: 缓存时间 (秒)，默认 3600 秒 (1 小时)
             use_community_api: 是否使用社区版 API，默认 False
         """
-        # 如果使用社区版 API，创建临时配置
-        if use_community_api and (config is None or not config.use_community_api):
-            from config import Config, COMMUNITY_BASE_URL
-            config = Config(
-                api_key="",  # 社区版不需要 key
-                base_url=COMMUNITY_BASE_URL,
-                use_community_api=True,
-            )
-        
-        super().__init__(config, session)
-        self.use_cache = use_cache
-        self.cache = cache or get_cache()
-        self.cache_ttl = cache_ttl
-        self.use_community_api = use_community_api or (config and config.use_community_api)
+        super().__init__(
+            config=config,
+            session=session,
+            use_cache=use_cache,
+            cache=cache,
+            cache_ttl=cache_ttl,
+            use_community_api=use_community_api,
+        )
 
     def get_markets(
         self,
@@ -102,8 +95,6 @@ class ReferenceDataAPI(CoinMetricsAPI):
         if page_size:
             params["page_size"] = page_size
 
-        use_cache_flag = use_cache if use_cache is not None else self.use_cache
-
         def fetch() -> pd.DataFrame:
             return self._request(
                 endpoint="/reference-data/markets",
@@ -114,20 +105,4 @@ class ReferenceDataAPI(CoinMetricsAPI):
                 next_page_key="next_page_url",
             )
 
-        if use_cache_flag:
-            return self._cached_request("/reference-data/markets", params, fetch)
-        return fetch()
-
-    def _cached_request(
-        self,
-        endpoint: str,
-        params: dict[str, Any],
-        fetch_func,
-    ) -> Any:
-        """带缓存的请求"""
-        cached = self.cache.get(endpoint, params)
-        if cached is not None:
-            return cached
-        data = fetch_func()
-        self.cache.set(endpoint, params, data, self.cache_ttl)
-        return data
+        return self._cached_request("/reference-data/markets", params, fetch, use_cache)
