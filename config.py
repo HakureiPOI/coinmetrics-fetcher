@@ -69,10 +69,10 @@ class Config:
 
     def __post_init__(self):
         """验证配置"""
-        # 如果使用社区版 API，不需要 api_key
-        if not self.use_community_api and not self.api_key:
-            raise ValueError("COINMETRICS_API_KEY 环境变量未设置（或使用 use_community_api=True 启用社区版）")
-
+        # 如果 api_key 为空，自动使用社区版 API
+        if not self.api_key:
+            self.use_community_api = True
+        
         if not (1 <= self.page_size <= 10000):
             raise ValueError("COINMETRICS_PAGE_SIZE 必须在 1-10000 之间")
 
