@@ -1,5 +1,5 @@
 """
-CoinMetrics 现货数据获取模块
+CoinMetrics 期货数据获取模块
 """
 
 import logging
@@ -7,19 +7,19 @@ from typing import Optional
 
 import pandas as pd
 
-from api.base_fetcher import BaseFetcher
+from ..base_fetcher import BaseFetcher
 from utils import validate_time_range, ValidationError
 
 logger = logging.getLogger(__name__)
 
 
-class SpotDataFetcher(BaseFetcher):
-    """现货数据获取器"""
+class FuturesDataFetcher(BaseFetcher):
+    """期货数据获取器"""
 
-    def _fetch_spot_markets(self, exchange: str, base: str, quote: Optional[str] = None) -> list[str]:
-        """获取现货市场列表"""
+    def _fetch_futures_markets(self, exchange: str, base: str) -> list[str]:
+        """获取所有期货市场列表（包括永续和交割）"""
         df = self.ref_api.get_markets(
-            exchange=exchange, market_type="spot", base=base, quote=quote, verbose=False
+            exchange=exchange, market_type="future", base=base, verbose=False
         )
         return df["market"].tolist()
 
@@ -35,7 +35,7 @@ class SpotDataFetcher(BaseFetcher):
     def _get_market_metadata(self, exchange: str, base: str) -> pd.DataFrame:
         """获取市场元数据"""
         return self.ref_api.get_markets(
-            exchange=exchange, market_type="spot", base=base, verbose=False
+            exchange=exchange, market_type="future", base=base, verbose=False
         )[["market", "symbol", "pair"]]
 
     def get_candles(
@@ -44,21 +44,19 @@ class SpotDataFetcher(BaseFetcher):
         base: str,
         start_time: str,
         end_time: str,
-        quote: Optional[str] = None,
         frequency: str = "1m",
         batch_size: int = 50,
         max_workers: int = 4,
         verbose: bool = True,
     ) -> pd.DataFrame:
         """
-        获取现货 K 线数据
+        获取所有期货的 K 线数据
 
         Args:
             exchange: 交易所名称 (如 deribit, binance)
             base: 基础资产 (如 btc, eth)
             start_time: 开始时间 (ISO 8601)
             end_time: 结束时间 (ISO 8601)
-            quote: 计价货币 (如 usd, usdt)，None 表示全部
             frequency: K 线频率 (1m/5m/10m/15m/30m/1h/4h/1d)，默认 1m
             batch_size: 每批请求的市场数量
             max_workers: 最大并发数
@@ -73,9 +71,9 @@ class SpotDataFetcher(BaseFetcher):
         if frequency not in valid_frequencies:
             raise ValidationError(f"frequency 必须是 {valid_frequencies} 之一")
 
-        markets = self._fetch_spot_markets(exchange, base, quote)
+        markets = self._fetch_futures_markets(exchange, base)
         if verbose:
-            logger.info(f"[现货K线] {exchange.upper()} {base.upper()} | {len(markets)} 个市场 | {frequency}")
+            logger.info(f"[K线] {exchange.upper()} {base.upper()} | {len(markets)} 个市场 | {frequency}")
 
         if not markets:
             return pd.DataFrame()
@@ -90,5 +88,5 @@ class SpotDataFetcher(BaseFetcher):
             df = df.sort_values(["market", "time"]).reset_index(drop=True)
 
         if verbose:
-            logger.info(f"[现货K线] 完成: {len(df)} 条")
+            logger.info(f"[K线] 完成: {len(df)} 条")
         return df

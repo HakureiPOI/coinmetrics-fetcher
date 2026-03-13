@@ -7,7 +7,7 @@ from typing import Optional
 
 import pandas as pd
 
-from api.base_fetcher import BaseFetcher
+from ..base_fetcher import BaseFetcher
 from utils import validate_time_range
 
 logger = logging.getLogger(__name__)

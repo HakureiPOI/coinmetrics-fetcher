@@ -16,7 +16,7 @@ _log_initialized = False
 
 class ColoredFormatter(logging.Formatter):
     """彩色日志格式化器"""
-    
+
     COLORS = {
         'DEBUG': '\033[36m',     # 青色
         'INFO': '\033[32m',      # 绿色
@@ -25,7 +25,7 @@ class ColoredFormatter(logging.Formatter):
         'CRITICAL': '\033[35m',  # 紫色
     }
     RESET = '\033[0m'
-    
+
     def format(self, record):
         color = self.COLORS.get(record.levelname, '')
         record.levelname = f"{color}{record.levelname:7}{self.RESET}"
@@ -76,22 +76,17 @@ def setup_logging(
     _log_initialized = True
 
 
-class FetchError(Exception):
-    """数据抓取异常基类"""
-    pass
-
-
-class PaginationError(FetchError):
+class PaginationError(Exception):
     """分页错误"""
     pass
 
 
-class APIError(FetchError):
+class APIError(Exception):
     """API 响应错误"""
     pass
 
 
-class BatchFetchError(FetchError):
+class BatchFetchError(Exception):
     """批量获取错误，包含所有失败的批次信息"""
 
     def __init__(self, errors: list[tuple[int, Exception]]):
@@ -104,7 +99,7 @@ class BatchFetchError(FetchError):
         super().__init__(f"批量获取失败 ({len(errors)} 个批次):\n" + "\n".join(error_msgs))
 
 
-class ValidationError(FetchError):
+class ValidationError(Exception):
     """参数验证错误"""
     pass
 

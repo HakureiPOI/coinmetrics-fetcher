@@ -11,8 +11,7 @@ from typing import Optional
 
 import pandas as pd
 
-from api.reference_data import ReferenceDataAPI
-from api.timeseries import TimeseriesAPI
+from .core import ReferenceDataAPI, TimeseriesAPI
 from config import Config, get_config
 from utils import BatchFetchError
 

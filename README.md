@@ -54,111 +54,110 @@ df.head()
 
 ## 功能模块
 
-| 模块 | 类 | 功能 |
-|------|-----|------|
-| reference_data | ReferenceDataAPI | 参考数据（资产、交易所、市场元数据） |
-| timeseries | TimeseriesAPI | 时间序列（价格、K线、Greeks、IV） |
-| options | OptionsDataFetcher | 期权数据（市场列表、Greeks、IV） |
-| funding_rates | FundingRateFetcher | 永续合约资金费率 |
-| futures | FuturesDataFetcher | 期货 K 线数据 |
-| spot | SpotDataFetcher | 现货 K 线数据 |
+| 模块 | 类 | 层级 | 功能 |
+|------|-----|------|------|
+| reference_data | ReferenceDataAPI | 一级 | 市场元数据查询 |
+| timeseries | TimeseriesAPI | 一级 | 时间序列数据（K 线、Greeks、IV、资金费率） |
+| options | OptionsDataFetcher | 二级 | 期权 Greeks 和隐含波动率 (IV) |
+| funding_rates | FundingRateFetcher | 二级 | 永续合约资金费率（实际/预计） |
+| futures | FuturesDataFetcher | 二级 | 期货 K 线数据 |
+
+## 支持的 API 端点
+
+**一级接口（直接调用）**:
+- `/reference-data/markets` - 市场元数据
+- `/timeseries/market-candles` - 市场 K 线数据
+- `/timeseries/market-greeks` - 期权 Greeks 数据
+- `/timeseries/market-implied-volatility` - 期权隐含波动率
+- `/timeseries/market-funding-rates` - 资金费率
+- `/timeseries/market-funding-rates-predicted` - 预计资金费率
+
+**二级接口（高级封装）**:
+- 期权数据获取器 - 自动获取市场列表 + 批量获取 Greeks/IV
+- 资金费率获取器 - 自动筛选永续合约 + 批量获取费率
+- 期货 K 线获取器 - 自动获取市场列表 + 批量获取 K 线
 
 ## API 使用指南
 
-### 参考数据
+### 一级接口
 
 ```python
-from api import ReferenceDataAPI
+from api import ReferenceDataAPI, TimeseriesAPI
 
-api = ReferenceDataAPI()
+# 参考数据
+ref = ReferenceDataAPI()
+markets = ref.get_markets(exchange="deribit", market_type="option", base="btc")
 
-# 获取所有交易所
-exchanges = api.get_exchanges()
+# 时间序列
+ts = TimeseriesAPI()
 
-# 获取 Deribit BTC 期权市场
-markets = api.get_markets(exchange="deribit", market_type="option", base="btc")
+# K 线数据
+candles = ts.get_market_candles(
+    markets="deribit-btc-perp",
+    start_time="2024-01-01",
+    end_time="2024-01-02",
+    frequency="1h"
+)
 
-# 获取资产元数据
-assets = api.get_assets(asset_id="btc,eth")
+# 期权 Greeks
+greeks = ts.get_market_greeks(
+    markets="deribit-BTC-27DEC24-50000-C-option",
+    start_time="2024-01-01",
+    granularity="1h"
+)
+
+# 隐含波动率
+iv = ts.get_market_implied_volatility(
+    markets="deribit-BTC-27DEC24-50000-C-option",
+    start_time="2024-01-01"
+)
+
+# 资金费率
+funding = ts.get_market_funding_rates(
+    markets="deribit-BTC-PERPETUAL",
+    start_time="2024-01-01"
+)
+
+# 预计资金费率
+predicted = ts.get_market_funding_rates_predicted(
+    markets="deribit-BTC-PERPETUAL",
+    start_time="2024-01-01"
+)
 ```
 
-### 时间序列
+### 二级接口
 
 ```python
-from api import TimeseriesAPI
+from api import OptionsDataFetcher, FundingRateFetcher, FuturesDataFetcher
 
-api = TimeseriesAPI()
-
-# 获取 BTC 价格
-df = api.get_asset_metrics(assets="btc", metrics="price_usd", start_time="2024-01-01", end_time="2024-01-31")
-
-# 获取市场 K 线
-df = api.get_market_candles(markets="deribit-btc-perp", start_time="2024-01-01")
-
-# 获取期权 Greeks
-df = api.get_market_greeks(markets="deribit-BTC-27DEC24-50000-C-option", start_time="2024-01-01", granularity="1h")
-```
-
-### 期权数据
-
-```python
-from api import OptionsDataFetcher
-
-fetcher = OptionsDataFetcher()
-
-# 获取期权列表
-df = fetcher.get_deribit_btc_options(status="online")
-
-# 获取 Greeks 和 IV 数据
-df = fetcher.get_options_greeks_iv(
+# 期权数据
+options = OptionsDataFetcher()
+df = options.get_options_greeks_iv(
     exchange="deribit",
     base="btc",
     start_time="2024-01-01",
     end_time="2024-01-02",
     granularity="1m"
 )
-```
 
-### 资金费率
+# 资金费率
+funding = FundingRateFetcher()
+df = funding.get_funding_rates(
+    exchange="deribit",
+    base="btc",
+    start_time="2024-01-01",
+    end_time="2024-01-31"
+)
 
-```python
-from api import FundingRateFetcher
-
-fetcher = FundingRateFetcher()
-
-# 获取资金费率
-df = fetcher.get_funding_rates(exchange="deribit", base="btc", start_time="2024-01-01", end_time="2024-01-31")
-
-# 获取预计资金费率
-df = fetcher.get_predicted_funding_rates(exchange="deribit", base="btc", start_time="2024-01-01", end_time="2024-01-31")
-```
-
-### 期货 K 线
-
-```python
-from api import FuturesDataFetcher
-
-fetcher = FuturesDataFetcher()
-
-# 获取期货 K 线（默认分钟级）
-df = fetcher.get_candles(exchange="deribit", base="btc", start_time="2024-01-01", end_time="2024-01-02")
-
-# 指定频率
-df = fetcher.get_candles(exchange="deribit", base="btc", start_time="2024-01-01", end_time="2024-01-02", frequency="1h")
-```
-
-### 现货 K 线
-
-```python
-from api import SpotDataFetcher
-
-fetcher = SpotDataFetcher()
-
-# 获取现货 K 线（默认分钟级）
-df = fetcher.get_candles(exchange="binance", base="btc", start_time="2024-01-01", end_time="2024-01-02")
-
-# 指定计价货币和频率
-df = fetcher.get_candles(exchange="binance", base="btc", quote="usdt", start_time="2024-01-01", end_time="2024-01-02", frequency="1h")
+# 期货 K 线
+futures = FuturesDataFetcher()
+df = futures.get_candles(
+    exchange="deribit",
+    base="btc",
+    start_time="2024-01-01",
+    end_time="2024-01-02",
+    frequency="1h"
+)
 ```
 
 **K 线频率支持**: `1m`, `5m`, `10m`, `15m`, `30m`, `1h`, `4h`, `1d`
@@ -181,9 +180,9 @@ from utils import BatchFetchError, ValidationError
 try:
     df = fetcher.get_options_greeks_iv(...)
 except ValidationError as e:
-    print(f"参数错误: {e}")
+    print(f"参数错误：{e}")
 except BatchFetchError as e:
-    print(f"部分批次失败: {e.errors}")
+    print(f"部分批次失败：{e.errors}")
 ```
 
 ## 自定义配置
@@ -209,14 +208,17 @@ coinmetrics-fetcher/
 ├── pyproject.toml          # 项目配置
 ├── api/
 │   ├── __init__.py
-│   ├── base.py             # 基础 API 类
+│   ├── base.py             # API 基类
 │   ├── base_fetcher.py     # 数据获取器基类
-│   ├── reference_data.py   # 参考数据接口
-│   ├── timeseries.py       # 时间序列接口
-│   ├── options.py          # 期权数据模块
-│   ├── funding_rates.py    # 资金费率模块
-│   ├── futures.py          # 期货 K 线模块
-│   └── spot.py             # 现货 K 线模块
+│   ├── core/               # 一级接口 - 直接调用 API
+│   │   ├── __init__.py
+│   │   ├── reference_data.py   # /reference-data/markets
+│   │   └── timeseries.py       # /timeseries/* 端点
+│   └── fetchers/           # 二级接口 - 高级封装
+│       ├── __init__.py
+│       ├── options.py          # 期权数据获取器
+│       ├── funding_rates.py    # 资金费率获取器
+│       └── futures.py          # 期货数据获取器
 └── utils/
     ├── __init__.py
     └── fetch_utils.py      # 工具函数和异常类
