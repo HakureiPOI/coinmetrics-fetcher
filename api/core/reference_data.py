@@ -48,9 +48,11 @@ class ReferenceDataAPI(CoinMetricsAPI):
     def get_markets(
         self,
         exchange: Optional[str] = None,
-        market_type: Optional[str] = None,
+        type: Optional[str] = None,
         base: Optional[str] = None,
         quote: Optional[str] = None,
+        asset: Optional[str] = None,
+        symbol: Optional[str] = None,
         page_size: Optional[int] = None,
         verbose: bool = True,
         use_cache: Optional[bool] = None,
@@ -60,9 +62,11 @@ class ReferenceDataAPI(CoinMetricsAPI):
 
         Args:
             exchange: 交易所名称
-            market_type: 市场类型 (future/option)
+            type: 市场类型 (spot/future/option)
             base: 基础资产
             quote: 计价货币
+            asset: 任意一方资产
+            symbol: 交易对符号
             page_size: 每页大小
             verbose: 是否打印进度
             use_cache: 是否使用缓存，None 表示使用实例默认值
@@ -73,12 +77,16 @@ class ReferenceDataAPI(CoinMetricsAPI):
         params = {}
         if exchange:
             params["exchange"] = exchange
-        if market_type:
-            params["type"] = market_type
+        if type:
+            params["type"] = type
         if base:
             params["base"] = base
         if quote:
             params["quote"] = quote
+        if asset:
+            params["asset"] = asset
+        if symbol:
+            params["symbol"] = symbol
         if page_size:
             params["page_size"] = page_size
 

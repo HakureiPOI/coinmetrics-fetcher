@@ -19,7 +19,7 @@ class FundingRateFetcher(BaseFetcher):
     def _fetch_perpetual_markets(self, exchange: str, base: str) -> list[str]:
         """获取永续合约市场列表"""
         df = self.ref_api.get_markets(
-            exchange=exchange, market_type="future", base=base, verbose=False
+            exchange=exchange, type="future", base=base, verbose=False
         )
         perpetuals = df[df["symbol"].str.contains("PERPETUAL", case=True, na=False)]
         return perpetuals["market"].tolist()
@@ -43,7 +43,7 @@ class FundingRateFetcher(BaseFetcher):
     def _get_market_metadata(self, exchange: str, base: str) -> pd.DataFrame:
         """获取市场元数据"""
         return self.ref_api.get_markets(
-            exchange=exchange, market_type="future", base=base, verbose=False
+            exchange=exchange, type="future", base=base, verbose=False
         )[["market", "symbol", "pair"]]
 
     def get_funding_rates(

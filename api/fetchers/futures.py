@@ -19,7 +19,7 @@ class FuturesDataFetcher(BaseFetcher):
     def _fetch_futures_markets(self, exchange: str, base: str) -> list[str]:
         """获取所有期货市场列表（包括永续和交割）"""
         df = self.ref_api.get_markets(
-            exchange=exchange, market_type="future", base=base, verbose=False
+            exchange=exchange, type="future", base=base, verbose=False
         )
         return df["market"].tolist()
 
@@ -35,7 +35,7 @@ class FuturesDataFetcher(BaseFetcher):
     def _get_market_metadata(self, exchange: str, base: str) -> pd.DataFrame:
         """获取市场元数据"""
         return self.ref_api.get_markets(
-            exchange=exchange, market_type="future", base=base, verbose=False
+            exchange=exchange, type="future", base=base, verbose=False
         )[["market", "symbol", "pair"]]
 
     def get_candles(

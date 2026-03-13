@@ -32,7 +32,7 @@ class OptionsDataFetcher(BaseFetcher):
     def get_options(self, filter: OptionFilter, page_size: Optional[int] = None, verbose: bool = True) -> pd.DataFrame:
         """获取期权市场列表"""
         df = self.ref_api.get_markets(
-            exchange=filter.exchange, market_type=filter.market_type,
+            exchange=filter.exchange, type=filter.market_type,
             base=filter.base, quote=filter.quote,
             page_size=page_size, verbose=verbose,
         )
@@ -56,7 +56,7 @@ class OptionsDataFetcher(BaseFetcher):
 
     def _fetch_option_markets(self, exchange: str, base: str, option_type, status, start_time: str, end_time: str) -> tuple[list[str], pd.DataFrame]:
         """获取符合条件的期权市场列表"""
-        df = self.ref_api.get_markets(exchange=exchange, market_type="option", base=base, verbose=False)
+        df = self.ref_api.get_markets(exchange=exchange, type="option", base=base, verbose=False)
 
         if status:
             df = df[df["status"] == status]
