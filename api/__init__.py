@@ -15,6 +15,10 @@ CoinMetrics API v4 Python 客户端
     └── base_fetcher.py # 数据获取器基类
 """
 
+# 自动初始化日志（在导入任何其他模块之前）
+from utils.fetch_utils import setup_logging as _setup_logging
+_setup_logging()
+
 from .base import CoinMetricsAPI
 from .base_fetcher import BaseFetcher
 from .core import ReferenceDataAPI, TimeseriesAPI

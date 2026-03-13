@@ -46,6 +46,9 @@ os.environ['COINMETRICS_API_KEY'] = 'your-api-key'
 os.environ['COINMETRICS_USE_COMMUNITY_API'] = 'true'
 ```
 
+> **注意**: 日志系统会自动初始化，默认输出到控制台（INFO 级别）。
+> 如需自定义日志配置，见 [高级配置 - 日志配置](#日志配置)。
+
 ### 2. 获取数据
 
 ```python
@@ -216,6 +219,30 @@ funding = ts.get_market_funding_rates(
 ```
 
 ## ⚙️ 高级配置
+
+### 日志配置
+
+日志系统会自动初始化，默认配置：
+- **输出**: 控制台（彩色格式）
+- **级别**: INFO
+- **文件**: 无
+
+**环境变量配置**:
+```bash
+# 设置日志级别
+export LOG_LEVEL=DEBUG
+
+# 输出到文件
+export LOG_FILE=logs/coinmetrics.log
+```
+
+**代码中配置**:
+```python
+from config import setup_logging
+
+# 自定义日志级别和文件
+setup_logging(level="DEBUG", log_file="logs/app.log")
+```
 
 ### 缓存配置
 

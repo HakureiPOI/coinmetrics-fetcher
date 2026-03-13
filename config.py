@@ -92,25 +92,45 @@ class Config:
 # 全局配置实例
 config = Config()
 
+# 自动初始化日志
+from utils.fetch_utils import setup_logging as _setup_logging
+_setup_logging(
+    level=config.log_level_int,
+    log_file=config.log_file,
+)
+
 
 def get_config() -> Config:
     """获取全局配置实例"""
     return config
 
 
-def setup_logging() -> logging.Logger:
+def setup_logging(level: Optional[str] = None, log_file: Optional[str] = None) -> logging.Logger:
     """
-    根据配置设置日志系统
+    手动配置日志系统（可选，用于覆盖默认配置）
+
+    Args:
+        level: 日志级别 (DEBUG/INFO/WARNING/ERROR/CRITICAL)，默认使用配置中的值
+        log_file: 日志文件路径，None 表示仅输出到控制台
 
     Returns:
         配置好的 logger 实例
+
+    Example:
+        # 使用默认配置
+        setup_logging()
+
+        # 自定义日志级别和文件
+        setup_logging(level="DEBUG", log_file="logs/app.log")
     """
     from utils.fetch_utils import setup_logging as _setup_logging
 
-    cfg = get_config()
-    _setup_logging(
-        level=cfg.log_level_int,
-        log_file=cfg.log_file,
-    )
+    if level:
+        log_level = getattr(logging, level.upper(), logging.INFO)
+    else:
+        log_level = config.log_level_int
+
+    log_file = log_file or config.log_file
+    _setup_logging(level=log_level, log_file=log_file)
 
     return logging.getLogger("coinmetrics")
