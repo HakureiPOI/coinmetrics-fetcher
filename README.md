@@ -157,16 +157,8 @@ from api import FundingRateFetcher
 
 funding = FundingRateFetcher()
 
-# 获取实际资金费率
+# 获取资金费率
 df = funding.get_funding_rates(
-    exchange='deribit',
-    base='btc',
-    start_time='2024-01-01',
-    end_time='2024-01-31'
-)
-
-# 获取预计资金费率
-df = funding.get_predicted_funding_rates(
     exchange='deribit',
     base='btc',
     start_time='2024-01-01',
@@ -315,7 +307,6 @@ except BatchFetchError as e:
 | `/timeseries/market-greeks` | 期权 Greeks |
 | `/timeseries/market-implied-volatility` | 隐含波动率 |
 | `/timeseries/market-funding-rates` | 资金费率 |
-| `/timeseries/market-funding-rates-predicted` | 预计资金费率 |
 
 ## 📝 参数说明
 
