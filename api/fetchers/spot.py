@@ -88,9 +88,3 @@ class SpotDataFetcher(BaseFetcher):
             exchange=exchange, type="spot", base=base, quote=quote, verbose=False
         )
         return df["market"].tolist()
-
-    def _get_market_metadata(self, exchange: str, base: str) -> pd.DataFrame:
-        """获取市场元数据"""
-        return self.ref_api.get_markets(
-            exchange=exchange, type="spot", base=base, verbose=False
-        )[["market", "symbol", "pair"]]
