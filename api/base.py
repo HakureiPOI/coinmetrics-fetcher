@@ -51,7 +51,9 @@ class CoinMetricsAPI:
         url = self._build_url(endpoint)
 
         request_params = params.copy() if params else {}
-        request_params["api_key"] = self.config.api_key
+        # 社区版 API 不需要 api_key
+        if self.config.api_key:
+            request_params["api_key"] = self.config.api_key
 
         if page_size is None:
             page_size = self.config.page_size

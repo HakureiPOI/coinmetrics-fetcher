@@ -29,6 +29,7 @@ class TimeseriesAPI(CoinMetricsAPI):
         use_cache: bool = True,
         cache: Optional[MemoryCache] = None,
         cache_ttl: int = 300,
+        use_community_api: bool = False,
     ):
         """
         初始化 TimeseriesAPI
@@ -39,11 +40,22 @@ class TimeseriesAPI(CoinMetricsAPI):
             use_cache: 是否启用缓存，默认 True
             cache: 缓存实例，None 表示使用全局缓存
             cache_ttl: 缓存时间 (秒)，默认 300 秒 (5 分钟)
+            use_community_api: 是否使用社区版 API，默认 False
         """
+        # 如果使用社区版 API，创建临时配置
+        if use_community_api and (config is None or not config.use_community_api):
+            from config import Config, COMMUNITY_BASE_URL
+            config = Config(
+                api_key="",  # 社区版不需要 key
+                base_url=COMMUNITY_BASE_URL,
+                use_community_api=True,
+            )
+        
         super().__init__(config, session)
         self.use_cache = use_cache
         self.cache = cache or get_cache()
         self.cache_ttl = cache_ttl
+        self.use_community_api = use_community_api or (config and config.use_community_api)
 
     def _cached_request(
         self,

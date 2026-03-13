@@ -28,6 +28,8 @@ pip install -e .
 
 ### 1. 配置 API 密钥
 
+**使用专业版 API**:
+
 ```python
 import os
 os.environ['COINMETRICS_API_KEY'] = 'your-api-key'
@@ -35,6 +37,17 @@ os.environ['COINMETRICS_API_KEY'] = 'your-api-key'
 # 可选：启用日志
 from config import setup_logging
 setup_logging()
+```
+
+**使用社区版 API** (无需 API 密钥):
+
+```python
+import os
+os.environ['COINMETRICS_USE_COMMUNITY_API'] = 'true'
+
+# 或者在代码中直接指定
+from api import FuturesDataFetcher
+fetcher = FuturesDataFetcher(use_community_api=True)
 ```
 
 ### 2. 使用示例
@@ -161,6 +174,55 @@ df = futures.get_candles(
 ```
 
 **K 线频率支持**: `1m`, `5m`, `10m`, `15m`, `30m`, `1h`, `4h`, `1d`
+
+## 社区版 API
+
+CoinMetrics 提供免费的社区版 API，无需 API 密钥即可使用（部分数据可能受限）。
+
+### 使用方式
+
+**方式 1: 环境变量**
+```python
+import os
+os.environ['COINMETRICS_USE_COMMUNITY_API'] = 'true'
+
+from api import ReferenceDataAPI
+ref = ReferenceDataAPI()  # 自动使用社区版
+```
+
+**方式 2: 构造函数参数**
+```python
+from api import ReferenceDataAPI, TimeseriesAPI, FuturesDataFetcher
+
+# 一级接口
+ref = ReferenceDataAPI(use_community_api=True)
+ts = TimeseriesAPI(use_community_api=True)
+
+# 二级接口
+fetcher = FuturesDataFetcher(use_community_api=True)
+```
+
+**方式 3: 自定义配置**
+```python
+from config import Config, COMMUNITY_BASE_URL
+from api import ReferenceDataAPI
+
+config = Config(
+    api_key="",  # 社区版不需要
+    base_url=COMMUNITY_BASE_URL,
+    use_community_api=True,
+)
+ref = ReferenceDataAPI(config=config)
+```
+
+### 社区版 vs 专业版
+
+| 特性 | 社区版 | 专业版 |
+|------|--------|--------|
+| API 密钥 | 不需要 | 需要 |
+| 速率限制 | 10 请求/6 秒 | 6000 请求/20 秒 |
+| 数据范围 | 部分数据 | 全部数据 |
+| Base URL | `community-api.coinmetrics.io` | `api.coinmetrics.io` |
 
 ## 内存缓存
 

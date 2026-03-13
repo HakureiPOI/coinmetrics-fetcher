@@ -28,6 +28,7 @@ class BaseFetcher:
         cache: Optional[MemoryCache] = None,
         ref_cache_ttl: int = 3600,
         ts_cache_ttl: int = 300,
+        use_community_api: bool = False,
     ):
         """
         初始化 BaseFetcher
@@ -38,7 +39,17 @@ class BaseFetcher:
             cache: 缓存实例，None 表示使用全局缓存
             ref_cache_ttl: ReferenceDataAPI 缓存时间 (秒)，默认 3600
             ts_cache_ttl: TimeseriesAPI 缓存时间 (秒)，默认 300
+            use_community_api: 是否使用社区版 API，默认 False
         """
+        # 如果使用社区版 API，创建临时配置
+        if use_community_api and (config is None or not config.use_community_api):
+            from config import Config, COMMUNITY_BASE_URL
+            config = Config(
+                api_key="",
+                base_url=COMMUNITY_BASE_URL,
+                use_community_api=True,
+            )
+        
         self.config = config or get_config()
         self.ref_api = ReferenceDataAPI(
             config=self.config,

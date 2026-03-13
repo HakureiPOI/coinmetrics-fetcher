@@ -15,6 +15,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+# API 基础 URL 预设
+COMMUNITY_BASE_URL = "https://community-api.coinmetrics.io/v4"
+PRO_BASE_URL = "https://api.coinmetrics.io/v4"
+
+
 @dataclass
 class Config:
     """CoinMetrics API 配置"""
@@ -25,8 +30,13 @@ class Config:
     # API 基础 URL
     base_url: str = field(
         default_factory=lambda: os.getenv(
-            "COINMETRICS_BASE_URL", "https://api.coinmetrics.io/v4"
+            "COINMETRICS_BASE_URL", PRO_BASE_URL
         )
+    )
+
+    # 是否使用社区版 API（如果为 True，则忽略 api_key）
+    use_community_api: bool = field(
+        default_factory=lambda: os.getenv("COINMETRICS_USE_COMMUNITY_API", "false").lower() == "true"
     )
 
     # 请求超时 (秒)
@@ -59,14 +69,19 @@ class Config:
 
     def __post_init__(self):
         """验证配置"""
-        if not self.api_key:
-            raise ValueError("COINMETRICS_API_KEY 环境变量未设置")
+        # 如果使用社区版 API，不需要 api_key
+        if not self.use_community_api and not self.api_key:
+            raise ValueError("COINMETRICS_API_KEY 环境变量未设置（或使用 use_community_api=True 启用社区版）")
 
         if not (1 <= self.page_size <= 10000):
             raise ValueError("COINMETRICS_PAGE_SIZE 必须在 1-10000 之间")
 
         if self.timeout <= 0:
             raise ValueError("COINMETRICS_TIMEOUT 必须大于 0")
+
+        # 如果启用社区版 API，自动设置 base_url
+        if self.use_community_api:
+            self.base_url = COMMUNITY_BASE_URL
 
     @property
     def log_level_int(self) -> int:
